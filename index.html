@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fotovision ERM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1C1A17;
+  --paper:#F7F2E9;
+  --paper-dim:#EDE5D6;
+  --card:#FFFFFF;
+  --gold:#B8863B;
+  --gold-dim:#D9BE8C;
+  --rose:#8B5E4A;
+  --green:#4C7A5B;
+  --green-dim:#E3ECE5;
+  --red:#B4463C;
+  --red-dim:#F5E3E0;
+  --amber:#C08A2E;
+  --amber-dim:#F6EAD3;
+  --line:#E2D8C4;
+  --muted:#8A8171;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.font-display{font-family:'Fraunces',serif;}
+.font-mono{font-family:'IBM Plex Mono',monospace;}
+
+/* App shell */
+#app{max-width:1100px;margin:0 auto;padding:0 20px 100px;}
+header.top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 0 18px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:var(--paper);z-index:20;
+}
+header.top .brand{display:flex;align-items:center;gap:10px;}
+header.top .mark{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-weight:600;font-size:15px;
+}
+header.top h1{font-family:'Fraunces',serif;font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+header.top .tag{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:0.03em;}
+
+/* Nav */
+nav.tabs{
+  display:flex;gap:4px;margin:18px 0 26px;
+  border-bottom:1px solid var(--line);overflow-x:auto;
+}
+nav.tabs button{
+  font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;
+  padding:10px 14px;border-bottom:2px solid transparent;
+  white-space:nowrap;transition:color .15s;
+}
+nav.tabs button.active{color:var(--ink);border-bottom-color:var(--gold);}
+nav.tabs button:hover{color:var(--ink);}
+
+/* Cards */
+.card{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:20px;
+}
+.grid{display:grid;gap:16px;}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:720px){.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+/* Dashboard stat cards */
+.stat{padding:18px 20px;}
+.stat .num{font-family:'Fraunces',serif;font-size:34px;font-weight:600;line-height:1;}
+.stat .label{font-size:12px;color:var(--muted);margin-top:6px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;}
+.stat.alert .num{color:var(--red);}
+.stat.ok .num{color:var(--green);}
+
+section.block{margin-bottom:32px;}
+section.block > h2{
+  font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+section.block > h2 .btn-add{
+  font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--ink);
+  background:var(--paper-dim);border:1px solid var(--line);border-radius:6px;
+  padding:7px 12px;cursor:pointer;
+}
+section.block > h2 .btn-add:hover{background:var(--gold-dim);}
+
+/* Event row */
+.event-row{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;
+  border:1px solid var(--line);border-radius:9px;background:var(--card);
+  margin-bottom:10px;cursor:pointer;transition:border-color .15s;
+}
+.event-row:hover{border-color:var(--gold);}
+.event-row .date-chip{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center;
+  background:var(--paper-dim);border-radius:7px;padding:6px 9px;min-width:52px;
+  line-height:1.2;
+}
+.event-row .date-chip .d{font-size:16px;font-weight:600;display:block;}
+.event-row .info{flex:1;min-width:0;}
+.event-row .info .client{font-weight:600;font-size:14.5px;}
+.event-row .info .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.event-row .staffcount{
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--rose);
+  background:var(--paper-dim);padding:4px 8px;border-radius:6px;white-space:nowrap;
+}
+.pill{
+  font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;white-space:nowrap;
+}
+.pill.stage-1,.pill.stage-2{background:var(--amber-dim);color:var(--amber);}
+.pill.stage-3,.pill.stage-4{background:#EAE3F5;color:#6B4FA0;}
+.pill.stage-5,.pill.stage-6{background:var(--gold-dim);color:#8A6220;}
+.pill.stage-7,.pill.stage-8{background:var(--green-dim);color:var(--green);}
+.pill.delayed{background:var(--red-dim);color:var(--red);}
+
+/* Film strip pipeline */
+.filmstrip{display:flex;gap:3px;margin-top:10px;}
+.filmstrip .frame{
+  flex:1;height:7px;border-radius:2px;background:var(--paper-dim);position:relative;
+}
+.filmstrip .frame.done{background:var(--green);}
+.filmstrip .frame.current{background:var(--amber);}
+.filmstrip .frame.delayed{background:var(--red);}
+
+/* Modal */
+.overlay{
+  position:fixed;inset:0;background:rgba(28,26,23,0.5);
+  display:none;align-items:flex-start;justify-content:center;
+  padding:40px 16px;overflow-y:auto;z-index:100;
+}
+.overlay.show{display:flex;}
+.modal{
+  background:var(--card);border-radius:12px;max-width:560px;width:100%;
+  padding:26px;margin-top:20px;
+}
+.modal h3{font-family:'Fraunces',serif;font-size:19px;margin-bottom:18px;}
+.field{margin-bottom:14px;}
+.field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;font-family:'IBM Plex Mono',monospace;}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
+  font-family:'Inter',sans-serif;font-size:13.5px;background:var(--paper);color:var(--ink);
+}
+.field textarea{resize:vertical;min-height:60px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.staff-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+.staff-check{
+  display:flex;align-items:center;gap:8px;font-size:13px;
+  border:1px solid var(--line);border-radius:7px;padding:8px 10px;cursor:pointer;
+}
+.staff-check input{width:auto;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.btn{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;
+  padding:10px 18px;border-radius:7px;border:none;cursor:pointer;
+}
+.btn-primary{background:var(--ink);color:var(--paper);}
+.btn-ghost{background:none;color:var(--muted);border:1px solid var(--line);}
+.btn-danger{background:var(--red-dim);color:var(--red);}
+
+/* Detail view */
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;}
+.back-link{font-size:12.5px;color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-bottom:14px;display:inline-block;}
+.back-link:hover{color:var(--ink);}
+.stage-list{display:flex;flex-direction:column;gap:8px;}
+.stage-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border:1px solid var(--line);border-radius:9px;background:var(--card);
+}
+.stage-item .idx{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+  width:20px;
+}
+.stage-item .name{flex:1;font-weight:600;font-size:13.5px;}
+.stage-item .due{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.stage-item.completed{opacity:0.55;}
+.stage-item.completed .name{text-decoration:line-through;}
+.stage-item select{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--line);
+  border-radius:6px;padding:4px 6px;background:var(--paper);
+}
+.assign-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.assign-chip{
+  font-size:12px;background:var(--paper-dim);padding:5px 10px;border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.empty{
+  text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px;
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+// ---------- Sample staff data (to be replaced with Firebase read later) ----------
+const STAFF = [
+  {id:'s1', name:'Aman Verma', role:'Lead Photographer'},
+  {id:'s2', name:'Rohit Sharma', role:'Candid Photographer'},
+  {id:'s3', name:'Neha Kapoor', role:'Candid Photographer'},
+  {id:'s4', name:'Vikram Rao', role:'Cinematographer'},
+  {id:'s5', name:'Sameer Khan', role:'Drone Operator'},
+  {id:'s6', name:'Priya Nair', role:'Assistant'},
+  {id:'s7', name:'Karan Mehta', role:'Assistant'},
+  {id:'s8', name:'Divya Singh', role:'Photo Editor'},
+  {id:'s9', name:'Arjun Patel', role:'Video Editor'},
+  {id:'s10', name:'Ritu Malhotra', role:'Album Designer'},
+];
+
+const STAGES = [
+  'Shoot Completed','Selection','Editing','Album Design',
+  'Client Approval','Print / Production','Quality Check','Dispatched'
+];
+
+// ---------- State ----------
+let EVENTS = [
+  {
+    id:'e1', client:'Jatin & Vritika', venue:'The Leela, Gurgaon', date:'2026-07-18',
+    package:'Premium Wedding', staff:['s1','s2','s4','s5'], stage:2,
+    stageDue:{2:'2026-07-22'}, delayed:false, notes:''
+  },
+  {
+    id:'e2', client:'Karan & Simran', venue:'ITC Maurya, Delhi', date:'2026-07-25',
+    package:'Classic Wedding', staff:['s2','s3','s6'], stage:0,
+    stageDue:{}, delayed:false, notes:''
+  },
+  {
+    id:'e3', client:'Aditi & Rohan', venue:'Taj Palace, Delhi', date:'2026-06-14',
+    package:'Premium Wedding', staff:['s1','s4','s8','s9'], stage:5,
+    stageDue:{5:'2026-07-08'}, delayed:true, notes:'Album approval pending from client 5 days'
+  },
+];
+
+let currentTab = 'dashboard';
+let currentEventId = null;
+
+// ---------- Utils ----------
+function fmtDate(d){
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function dateChip(d){
+  const dt = new Date(d+'T00:00:00');
+  return {day:dt.getDate(), mon:dt.toLocaleDateString('en-IN',{month:'short'})};
+}
+function staffName(id){ return STAFF.find(s=>s.id===id)?.name || id; }
+function genId(){ return 'e'+Math.random().toString(36).slice(2,9); }
+
+// ---------- Render root ----------
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <header class="top">
+      <div class="brand">
+        <div class="mark">FV</div>
+        <div>
+          <h1>Fotovision ERM</h1>
+          <div class="tag">OPERATIONS · v1</div>
+        </div>
+      </div>
+    </header>
+    <nav class="tabs">
+      ${tabBtn('dashboard','Dashboard')}
+      ${tabBtn('events','Events')}
+      ${tabBtn('pipeline','Delivery Pipeline')}
+    </nav>
+    <div id="tabContent"></div>
+  `;
+  renderTab();
+}
+function tabBtn(id,label){
+  return `<button class="${currentTab===id?'active':''}" onclick="setTab('${id}')">${label}</button>`;
+}
+function setTab(id){ currentTab=id; currentEventId=null; renderTab(); }
+
+function renderTab(){
+  const el = document.getElementById('tabContent');
+  if(currentTab==='dashboard') el.innerHTML = renderDashboard();
+  else if(currentTab==='events') el.innerHTML = currentEventId ? renderEventDetail(currentEventId) : renderEvents();
+  else if(currentTab==='pipeline') el.innerHTML = currentEventId ? renderEventDetail(currentEventId) : renderPipeline();
+}
+
+// ---------- Dashboard ----------
+function renderDashboard(){
+  const upcoming = EVENTS.filter(e=> new Date(e.date) >= new Date(new Date().toDateString())).length;
+  const inProgress = EVENTS.filter(e=> e.stage>0 && e.stage<7).length;
+  const delayed = EVENTS.filter(e=> e.delayed).length;
+
+  const soon = [...EVENTS].sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(0,4);
+
+  return `
+    <section class="block">
+      <div class="grid grid-3">
+        <div class="card stat"><div class="num font-mono">${upcoming}</div><div class="label">UPCOMING EVENTS</div></div>
+        <div class="card stat ok"><div class="num font-mono">${inProgress}</div><div class="label">IN DELIVERY PIPELINE</div></div>
+        <div class="card stat alert"><div class="num font-mono">${delayed}</div><div class="label">DELAYED ORDERS</div></div>
+      </div>
+    </section>
+    <section class="block">
+      <h2>Upcoming & Active Events</h2>
+      ${soon.map(renderEventRow).join('') || emptyState('No events yet')}
+    </section>
+  `;
+}
+
+// ---------- Events list ----------
+function renderEvents(){
+  const sorted = [...EVENTS].sort((a,b)=> new Date(b.date)-new Date(a.date));
+  return `
+    <section class="block">
+      <h2>All Events <button class="btn-add" onclick="openEventModal()">+ New Event</button></h2>
+      ${sorted.map(renderEventRow).join('') || emptyState('No events yet. Add your first one.')}
+    </section>
+  `;
+}
+
+function renderEventRow(e){
+  const chip = dateChip(e.date);
+  const stagePill = e.delayed
+    ? `<span class="pill delayed">DELAYED</span>`
+    : `<span class="pill stage-${e.stage+1}">${STAGES[e.stage]}</span>`;
+  return `
+    <div class="event-row" onclick="openEventDetail('${e.id}')">
+      <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
+      <div class="info">
+        <div class="client">${e.client}</div>
+        <div class="meta">${e.venue} · ${e.package}</div>
+      </div>
+      <div class="staffcount">${e.staff.length} assigned</div>
+      ${stagePill}
+    </div>
+  `;
+}
+
+// ---------- Pipeline tab (grouped by stage) ----------
+function renderPipeline(){
+  const active = EVENTS.filter(e=> e.stage < 7);
+  return `
+    <section class="block">
+      <h2>Delivery Pipeline</h2>
+      ${active.map(e=>{
+        const chip = dateChip(e.date);
+        return `
+        <div class="event-row" onclick="openEventDetail('${e.id}')" style="flex-direction:column;align-items:stretch;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
+            <div class="info">
+              <div class="client">${e.client}</div>
+              <div class="meta">Stage ${e.stage+1}/8 · ${STAGES[e.stage]}</div>
+            </div>
+            ${e.delayed ? `<span class="pill delayed">DELAYED</span>` : `<span class="pill stage-${e.stage+1}">${STAGES[e.stage]}</span>`}
+          </div>
+          <div class="filmstrip">
+            ${STAGES.map((s,i)=>`<div class="frame ${i<e.stage?'done':(i===e.stage?(e.delayed?'delayed':'current'):'')}"></div>`).join('')}
+          </div>
+        </div>`;
+      }).join('') || emptyState('No active orders in the pipeline.')}
+    </section>
+  `;
+}
+
+// ---------- Event detail ----------
+function openEventDetail(id){ currentEventId=id; renderTab(); }
+function closeEventDetail(){ currentEventId=null; renderTab(); }
+
+function renderEventDetail(id){
+  const e = EVENTS.find(x=>x.id===id);
+  if(!e) return emptyState('Event not found');
+  return `
+    <span class="back-link" onclick="closeEventDetail()">&larr; back to list</span>
+    <div class="detail-header">
+      <div>
+        <h2 class="font-display" style="font-size:22px;">${e.client}</h2>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px;">${e.venue} · ${fmtDate(e.date)} · ${e.package}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="deleteEvent('${e.id}')">Delete</button>
+    </div>
+
+    <section class="block">
+      <h2>Assigned Staff</h2>
+      <div class="card">
+        <div class="assign-list">
+          ${e.staff.map(sid=>`<span class="assign-chip">${staffName(sid)}</span>`).join('') || '<span style="color:var(--muted);font-size:13px;">No staff assigned yet</span>'}
+        </div>
+        <button class="btn btn-ghost" style="margin-top:14px;" onclick="openAssignModal('${e.id}')">Edit Assignment</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Delivery Stage</h2>
+      <div class="card">
+        <div class="filmstrip" style="margin-top:0;margin-bottom:14px;">
+          ${STAGES.map((s,i)=>`<div class="frame ${i<e.stage?'done':(i===e.stage?(e.delayed?'delayed':'current'):'')}"></div>`).join('')}
+        </div>
+        <div class="stage-list">
+          ${STAGES.map((s,i)=>`
+            <div class="stage-item ${i<e.stage?'completed':''}">
+              <span class="idx">${String(i+1).padStart(2,'0')}</span>
+              <span class="name">${s}</span>
+              ${e.stageDue[i] ? `<span class="due">due ${fmtDate(e.stageDue[i])}</span>` : ''}
+              ${i===e.stage ? `<button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" onclick="advanceStage('${e.id}')">Mark Done →</button>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ${e.stage<7 ? `
+          <div style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+            <label style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);"><input type="checkbox" ${e.delayed?'checked':''} onchange="toggleDelayed('${e.id}')"> Flag as delayed</label>
+          </div>
+        ` : ''}
+        ${e.notes ? `<div style="margin-top:12px;font-size:13px;color:var(--rose);background:var(--red-dim);padding:10px 12px;border-radius:8px;">${e.notes}</div>` : ''}
+      </div>
+    </section>
+  `;
+}
+
+function advanceStage(id){
+  const e = EVENTS.find(x=>x.id===id);
+  if(e && e.stage<7){ e.stage++; e.delayed=false; renderTab(); }
+}
+function toggleDelayed(id){
+  const e = EVENTS.find(x=>x.id===id);
+  if(e){ e.delayed = !e.delayed; renderTab(); }
+}
+function deleteEvent(id){
+  EVENTS = EVENTS.filter(x=>x.id!==id);
+  currentEventId=null;
+  renderTab();
+}
+
+function emptyState(msg){
+  return `<div class="empty">${msg}</div>`;
+}
+
+// ---------- New Event modal ----------
+function openEventModal(){
+  document.getElementById('modalBody').innerHTML = `
+    <h3>New Event</h3>
+    <div class="field"><label>Client Name</label><input id="f_client" placeholder="e.g. Jatin & Vritika"></div>
+    <div class="row2">
+      <div class="field"><label>Event Date</label><input id="f_date" type="date"></div>
+      <div class="field"><label>Package</label><input id="f_package" placeholder="e.g. Premium Wedding"></div>
+    </div>
+    <div class="field"><label>Venue</label><input id="f_venue" placeholder="e.g. The Leela, Gurgaon"></div>
+    <div class="field">
+      <label>Assign Staff</label>
+      <div class="staff-check-grid">
+        ${STAFF.map(s=>`
+          <label class="staff-check"><input type="checkbox" value="${s.id}" class="staffbox"> ${s.name} <span style="color:var(--muted);font-size:11px;">(${s.role})</span></label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewEvent()">Create Event</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function saveNewEvent(){
+  const client = document.getElementById('f_client').value.trim();
+  const date = document.getElementById('f_date').value;
+  const venue = document.getElementById('f_venue').value.trim();
+  const pkg = document.getElementById('f_package').value.trim();
+  const staff = [...document.querySelectorAll('.staffbox:checked')].map(c=>c.value);
+  if(!client || !date){ alert('Client name and date are required'); return; }
+  EVENTS.push({id:genId(), client, date, venue, package:pkg, staff, stage:0, stageDue:{}, delayed:false, notes:''});
+  closeModal();
+  renderTab();
+}
+
+// ---------- Assign staff modal ----------
+function openAssignModal(eventId){
+  const e = EVENTS.find(x=>x.id===eventId);
+  document.getElementById('modalBody').innerHTML = `
+    <h3>Edit Assignment — ${e.client}</h3>
+    <div class="field">
+      <div class="staff-check-grid">
+        ${STAFF.map(s=>`
+          <label class="staff-check"><input type="checkbox" value="${s.id}" class="staffbox" ${e.staff.includes(s.id)?'checked':''}> ${s.name} <span style="color:var(--muted);font-size:11px;">(${s.role})</span></label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAssignment('${eventId}')">Save</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function saveAssignment(eventId){
+  const e = EVENTS.find(x=>x.id===eventId);
+  e.staff = [...document.querySelectorAll('.staffbox:checked')].map(c=>c.value);
+  closeModal();
+  renderTab();
+}
+
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', (ev)=>{ if(ev.target.id==='overlay') closeModal(); });
+
+// expose fns used inline
+Object.assign(window, {setTab, openEventDetail, closeEventDetail, openEventModal, saveNewEvent,
+  openAssignModal, saveAssignment, closeModal, advanceStage, toggleDelayed, deleteEvent});
+
+render();
+</script>
+</body>
+</html>
