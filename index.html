@@ -137,9 +137,9 @@ function isFreelancer(id){ return FREELANCERS.some(p=>p.id===id); }
 
 const STATUS = ['not-started','in-progress','done'];
 const STATUS_LABEL = {'not-started':'Not Started','in-progress':'In Progress','done':'Done'};
+const DATA_STATUS = ['pending','copied'];
 
-// ---------- Track definitions ----------
-// wedding-level (single) tracks
+// ---------- Track definitions (all wedding-wide now) ----------
 const WEDDING_TRACKS = [
   {key:'allPhotos', label:'All Photographs (watermarked, low-res)', platform:'Google Drive'},
   {key:'photoFrames', label:'Photo Frames', platform:''},
@@ -149,37 +149,64 @@ const WEDDING_TRACKS = [
   {key:'delivery', label:'Delivery to Client', platform:''},
   {key:'deliveryDone', label:'Delivery Done', platform:''},
 ];
-// per-event tracks
-const EVENT_TRACKS = [
-  {key:'photoEditing', label:'Photo Editing', platform:'FotoOwl'},
-  {key:'reels', label:'Teaser / Insta-cut / Story / Reels', platform:'Vimeo'},
-  {key:'fullVideo', label:'Full Event Video', platform:'Google Drive'},
+// Video Editing sub-items (wedding-wide, single assignee each)
+const VIDEO_EDITING_SINGLE = [
+  {key:'teaser', label:'Teaser', platform:'Vimeo'},
+  {key:'instacut', label:'Insta-cut', platform:'Vimeo'},
+  {key:'story', label:'Wedding Story', platform:'Vimeo'},
+  {key:'reels', label:'Reels', platform:'Vimeo'},
 ];
 
 function newTrackObj(defaultAssignee){
   return {status:'not-started', assignee:defaultAssignee||'', due:'', link:''};
 }
+function newPhotoEditingObj(){
+  return {
+    lightroom: {status:'not-started', assignee:'', due:'', link:''},
+    photoshop: {status:'not-started', assignee:'', due:''}
+  };
+}
+function newVideoEditingObj(events){
+  const fullVideo={};
+  events.forEach(ev=> fullVideo[ev.id]=newTrackObj());
+  const obj={fullVideo};
+  VIDEO_EDITING_SINGLE.forEach(t=> obj[t.key]=newTrackObj());
+  return obj;
+}
+function newDataManagementObj(events){
+  const evData={};
+  events.forEach(ev=> evData[ev.id]={still:'pending', video:'pending'});
+  return {hardDisks:[], backupHardDisks:[], events:evData};
+}
+function weddingWideTracks(w){
+  return {
+    allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj('e8'),
+    album:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
+  };
+}
 
 // ---------- Sample weddings ----------
 let WEDDINGS = [
   {
-    id:'w1', client:'Karan & Simran', startDate:'2026-07-18', endDate:'2026-07-20',
+    id:'w1', client:'Karan & Simran', date:'2026-07-18',
     events:[
-      {id:'ev1', name:'Mehendi', date:'2026-07-18', venue:'Farmhouse, Chattarpur', still:['e2'], cine:['e4'],
-        tracks:{photoEditing:newTrackObj('e6'), reels:newTrackObj('e7'), fullVideo:newTrackObj('e7')}},
-      {id:'ev2', name:'Sangeet', date:'2026-07-19', venue:'ITC Maurya', still:['e2','f1'], cine:['e4','f2'],
-        tracks:{photoEditing:newTrackObj('e6'), reels:newTrackObj('f4'), fullVideo:newTrackObj('e7')}},
-      {id:'ev3', name:'Wedding', date:'2026-07-20', venue:'ITC Maurya', still:['e1','e2','f1'], cine:['e4','e5'],
-        tracks:{photoEditing:newTrackObj('e6'), reels:newTrackObj('e7'), fullVideo:newTrackObj('e7')}},
+      {id:'ev1', name:'Mehendi', date:'2026-07-18', venue:'Farmhouse, Chattarpur', still:['e2'], cine:['e4']},
+      {id:'ev2', name:'Sangeet', date:'2026-07-19', venue:'ITC Maurya', still:['e2','f1'], cine:['e4','f2']},
+      {id:'ev3', name:'Wedding', date:'2026-07-20', venue:'ITC Maurya', still:['e1','e2','f1'], cine:['e4','e5']},
     ],
-    tracks:{
-      allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj('e8'),
-      album:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
-    }
+    photoEditing:newPhotoEditingObj(),
+    videoEditing:null, // set below once events exist
+    dataManagement:null,
+    tracks: weddingWideTracks()
   }
 ];
+WEDDINGS[0].videoEditing = newVideoEditingObj(WEDDINGS[0].events);
+WEDDINGS[0].dataManagement = newDataManagementObj(WEDDINGS[0].events);
 WEDDINGS[0].tracks.allPhotos.status='in-progress';
-WEDDINGS[0].events[0].tracks.photoEditing.status='done';
+WEDDINGS[0].photoEditing.lightroom.status='done';
+WEDDINGS[0].photoEditing.lightroom.assignee='e6';
+WEDDINGS[0].dataManagement.hardDisks=['HD-01 Seagate'];
+WEDDINGS[0].dataManagement.events['ev1'].still='copied';
 
 let currentTab='dashboard';
 let currentWeddingId=null;
@@ -193,7 +220,9 @@ function dateChip(d){ const dt=new Date(d+'T00:00:00'); return {day:dt.getDate()
 function allTracksOf(w){
   let list=[];
   WEDDING_TRACKS.forEach(t=> list.push(w.tracks[t.key]));
-  w.events.forEach(ev=> EVENT_TRACKS.forEach(t=> list.push(ev.tracks[t.key])));
+  list.push(w.photoEditing.lightroom, w.photoEditing.photoshop);
+  VIDEO_EDITING_SINGLE.forEach(t=> list.push(w.videoEditing[t.key]));
+  w.events.forEach(ev=> list.push(w.videoEditing.fullVideo[ev.id]));
   return list;
 }
 function progressOf(w){
@@ -266,7 +295,7 @@ function renderWeddingsList(){
   `;
 }
 function renderWeddingRow(w){
-  const chip=dateChip(w.startDate);
+  const chip=dateChip(w.date);
   const p=progressOf(w);
   const hasDelay = allTracksOf(w).some(isDelayed);
   return `
@@ -274,7 +303,7 @@ function renderWeddingRow(w){
       <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
       <div class="info">
         <div class="client">${w.client}</div>
-        <div class="meta">${w.events.length} events · ${fmtDate(w.startDate)}${w.endDate!==w.startDate?' – '+fmtDate(w.endDate):''}</div>
+        <div class="meta">${w.events.length} events · ${fmtDate(w.date)}</div>
       </div>
       <div class="progress-mini">${p.done}/${p.total} tracks done</div>
       ${hasDelay ? `<span class="pill delayed">DELAYED</span>` : `<span class="pill ${p.pct===100?'done':'in-progress'}">${p.pct}%</span>`}
@@ -295,7 +324,7 @@ function renderWeddingDetail(id){
     <div class="detail-header">
       <div>
         <h2 class="font-display" style="font-size:22px;">${w.client}</h2>
-        <div style="color:var(--muted);font-size:13px;margin-top:4px;">${fmtDate(w.startDate)}${w.endDate!==w.startDate?' – '+fmtDate(w.endDate):''} · ${w.events.length} events</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px;">${fmtDate(w.date)} · ${w.events.length} events</div>
       </div>
       <button class="btn btn-ghost" onclick="deleteWedding('${w.id}')">Delete Wedding</button>
     </div>
@@ -310,19 +339,28 @@ function renderWeddingDetail(id){
     </section>
 
     <section class="block">
-      <h2>Post-Production — Per Event</h2>
-      ${w.events.map(ev=>`
-        <div class="track-group">
-          <div class="track-group-title">${ev.name} — ${fmtDate(ev.date)}</div>
-          ${EVENT_TRACKS.map(t=>renderTrackRow(w.id, t, ev.tracks[t.key], ev.id)).join('')}
-        </div>
-      `).join('')}
+      <h2>Data Management</h2>
+      ${renderDataManagement(w)}
     </section>
 
     <section class="block">
       <h2>Post-Production — Wedding-wide</h2>
+
       <div class="track-group">
-        ${WEDDING_TRACKS.map(t=>renderTrackRow(w.id, t, w.tracks[t.key], null)).join('')}
+        <div class="track-group-title">Photo Editing</div>
+        ${renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true)}
+        ${renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false)}
+      </div>
+
+      <div class="track-group">
+        <div class="track-group-title">Video Editing</div>
+        ${VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('')}
+        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;">Full Event Video — by event</div>
+        ${w.events.map(ev=>renderTrackRow(w.id, {key:'fullVideo_'+ev.id, label:ev.name+' — Full Video', platform:'Google Drive'}, w.videoEditing.fullVideo[ev.id], {kind:'fullVideo', eventId:ev.id})).join('')}
+      </div>
+
+      <div class="track-group">
+        ${WEDDING_TRACKS.map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('')}
       </div>
     </section>
   `;
@@ -342,36 +380,125 @@ function renderEventCard(weddingId, ev){
   `;
 }
 
-function renderTrackRow(weddingId, trackDef, track, eventId){
+// ---------- Photo Editing (Lightroom -> Photoshop, sequential) ----------
+function renderPhotoEditingRow(w, subKey, label, hasLink){
+  const track = w.photoEditing[subKey];
+  const locked = subKey==='photoshop' && w.photoEditing.lightroom.status!=='done';
   const delayed = isDelayed(track);
   const statusCls = delayed ? 'delayed' : track.status;
   const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
-  const scope = eventId || 'w';
+  return `
+    <div class="track-row" style="${locked?'opacity:.5;':''}">
+      <span class="pill ${statusCls}">${statusText}</span>
+      <span class="tname">${label}${hasLink?' <span class="tmeta">(FotoOwl)</span>':''}${locked?' <span class="tmeta">— waiting on Lightroom</span>':''}</span>
+      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','status',this.value)">
+        ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+      </select>
+      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
+        <option value="">Assign to...</option>
+        ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+      </select>
+      <input type="date" ${locked?'disabled':''} value="${track.due}" onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)">
+      ${hasLink?`<input type="text" ${locked?'disabled':''} placeholder="paste FotoOwl link" value="${track.link||''}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
+      ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
+    </div>
+  `;
+}
+function updatePhotoEditing(weddingId, subKey, field, value){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.photoEditing[subKey][field]=value;
+  renderTab();
+}
+
+// ---------- Generic wedding-wide / video-editing tracks ----------
+function renderTrackRow(weddingId, trackDef, track, ref){
+  const delayed = isDelayed(track);
+  const statusCls = delayed ? 'delayed' : track.status;
+  const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
+  const refStr = encodeURIComponent(JSON.stringify(ref));
   return `
     <div class="track-row">
       <span class="pill ${statusCls}">${statusText}</span>
       <span class="tname">${trackDef.label}${trackDef.platform?` <span class="tmeta">(${trackDef.platform})</span>`:''}</span>
-      <select onchange="updateTrack('${weddingId}','${trackDef.key}','${scope}','status',this.value)">
+      <select onchange="updateTrack('${weddingId}','${refStr}','status',this.value)">
         ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
       </select>
-      <select onchange="updateTrack('${weddingId}','${trackDef.key}','${scope}','assignee',this.value)">
+      <select onchange="updateTrack('${weddingId}','${refStr}','assignee',this.value)">
         <option value="">Assign to...</option>
         ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
-      <input type="date" value="${track.due}" onchange="updateTrack('${weddingId}','${trackDef.key}','${scope}','due',this.value)">
-      <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${weddingId}','${trackDef.key}','${scope}','link',this.value)">
+      <input type="date" value="${track.due}" onchange="updateTrack('${weddingId}','${refStr}','due',this.value)">
+      <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
       ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}
     </div>
   `;
 }
-
-function updateTrack(weddingId, trackKey, scope, field, value){
+function getTrackByRef(w, ref){
+  if(ref.kind==='wedding') return w.tracks[ref.trackKey];
+  if(ref.kind==='videoEditingSingle') return w.videoEditing[ref.trackKey];
+  if(ref.kind==='fullVideo') return w.videoEditing.fullVideo[ref.eventId];
+}
+function updateTrack(weddingId, refStr, field, value){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   if(!w) return;
-  let track;
-  if(scope==='w') track=w.tracks[trackKey];
-  else track = w.events.find(e=>e.id===scope).tracks[trackKey];
+  const ref=JSON.parse(decodeURIComponent(refStr));
+  const track=getTrackByRef(w, ref);
   track[field]=value;
+  renderTab();
+}
+
+// ---------- Data Management (mirrors attendance app's wedding groups: hard disks + copy status) ----------
+function renderDataManagement(w){
+  const dm=w.dataManagement;
+  return `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Hard Disks Assigned</div>
+      <div class="assign-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        ${dm.hardDisks.map((d,i)=>`<span class="chip">💾 ${d} <span style="cursor:pointer;color:var(--red);" onclick="removeHardDisk('${w.id}',${i})">×</span></span>`).join('') || '<span style="color:var(--muted);font-size:12.5px;">No disks assigned yet</span>'}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newHdInput_${w.id}" placeholder="e.g. HD-04 Seagate 2TB" style="flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper-dim);font-size:13px;">
+        <button class="btn btn-primary btn-sm" onclick="addHardDisk('${w.id}')">Add Disk</button>
+      </div>
+    </div>
+    ${w.events.map(ev=>{
+      const ed=dm.events[ev.id] || (dm.events[ev.id]={still:'pending',video:'pending'});
+      return `
+      <div class="track-row">
+        <span class="pill ${ed.still==='copied'?'done':'delayed'}">${ed.still==='copied'?'Copied':'Pending'}</span>
+        <span class="tname">${ev.name} — Photo Data</span>
+        <select onchange="updateDataCopy('${w.id}','${ev.id}','still',this.value)">
+          <option value="pending" ${ed.still==='pending'?'selected':''}>Pending</option>
+          <option value="copied" ${ed.still==='copied'?'selected':''}>Copied + Backed Up</option>
+        </select>
+      </div>
+      <div class="track-row">
+        <span class="pill ${ed.video==='copied'?'done':'delayed'}">${ed.video==='copied'?'Copied':'Pending'}</span>
+        <span class="tname">${ev.name} — Video Data</span>
+        <select onchange="updateDataCopy('${w.id}','${ev.id}','video',this.value)">
+          <option value="pending" ${ed.video==='pending'?'selected':''}>Pending</option>
+          <option value="copied" ${ed.video==='copied'?'selected':''}>Copied + Backed Up</option>
+        </select>
+      </div>
+    `;}).join('') || emptyState('Add events first to track their data copy status')}
+  `;
+}
+function addHardDisk(weddingId){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const inp=document.getElementById('newHdInput_'+weddingId);
+  const name=inp.value.trim();
+  if(!name) return;
+  w.dataManagement.hardDisks.push(name);
+  renderTab();
+}
+function removeHardDisk(weddingId, idx){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.hardDisks.splice(idx,1);
+  renderTab();
+}
+function updateDataCopy(weddingId, eventId, kind, value){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.events[eventId][kind]=value;
   renderTab();
 }
 
@@ -388,10 +515,7 @@ function openWeddingModal(){
   document.getElementById('modalBody').innerHTML = `
     <h3>New Wedding Booking</h3>
     <div class="field"><label>Client Names</label><input id="f_client" placeholder="e.g. Karan & Simran"></div>
-    <div class="row2">
-      <div class="field"><label>Start Date</label><input id="f_start" type="date"></div>
-      <div class="field"><label>End Date</label><input id="f_end" type="date"></div>
-    </div>
+    <div class="field"><label>Wedding Date</label><input id="f_date" type="date"></div>
     <div style="font-size:12px;color:var(--muted);margin:6px 0 4px;">You can add events (Mehendi, Sangeet, Wedding, Reception etc.) after creating the wedding.</div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -402,13 +526,14 @@ function openWeddingModal(){
 }
 function saveNewWedding(){
   const client=document.getElementById('f_client').value.trim();
-  const startDate=document.getElementById('f_start').value;
-  const endDate=document.getElementById('f_end').value || startDate;
-  if(!client||!startDate){ alert('Client name and start date are required'); return; }
+  const date=document.getElementById('f_date').value;
+  if(!client||!date){ alert('Client name and date are required'); return; }
   const w={
-    id:genId(), client, startDate, endDate, events:[],
-    tracks:{allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj('e8'),
-      album:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()}
+    id:genId(), client, date, events:[],
+    photoEditing:newPhotoEditingObj(),
+    videoEditing:newVideoEditingObj([]),
+    dataManagement:newDataManagementObj([]),
+    tracks:weddingWideTracks()
   };
   WEDDINGS.push(w);
   closeModal();
@@ -457,8 +582,10 @@ function saveEvent(weddingId, eventId){
     const ev=w.events.find(e=>e.id===eventId);
     ev.name=name; ev.date=date; ev.venue=venue; ev.still=still; ev.cine=cine;
   } else {
-    w.events.push({id:genEventId(), name, date, venue, still, cine,
-      tracks:{photoEditing:newTrackObj(), reels:newTrackObj(), fullVideo:newTrackObj()}});
+    const newEvId=genEventId();
+    w.events.push({id:newEvId, name, date, venue, still, cine});
+    w.videoEditing.fullVideo[newEvId]=newTrackObj();
+    w.dataManagement.events[newEvId]={still:'pending', video:'pending'};
   }
   closeModal();
   renderTab();
@@ -466,6 +593,8 @@ function saveEvent(weddingId, eventId){
 function deleteEvent(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   w.events=w.events.filter(e=>e.id!==eventId);
+  delete w.videoEditing.fullVideo[eventId];
+  delete w.dataManagement.events[eventId];
   closeModal();
   renderTab();
 }
@@ -474,7 +603,8 @@ function closeModal(){ document.getElementById('overlay').classList.remove('show
 document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target.id==='overlay') closeModal(); });
 
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
-  openEventModal, saveEvent, deleteEvent, updateTrack, deleteWedding, closeModal});
+  openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
+  addHardDisk, removeHardDisk, updateDataCopy, handleFab});
 
 render();
 </script>
