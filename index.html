@@ -85,10 +85,15 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .back-link{font-size:12.5px;color:var(--muted);cursor:pointer;margin-bottom:14px;display:inline-block;}
 .back-link:hover{color:var(--ink);}
 .detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
-.event-card{border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-bottom:10px;background:var(--card);}
-.event-card .ehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.event-card .ename{font-weight:600;font-size:14px;}
-.event-card .edate{font-size:11.5px;color:var(--muted);}
+.event-card{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--card);overflow:hidden;}
+.event-card .ehead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;gap:10px;}
+.event-card .ehead-left{display:flex;align-items:center;gap:8px;min-width:0;}
+.event-card .echev{font-size:11px;color:var(--muted);transition:transform .15s;flex-shrink:0;}
+.event-card .echev.open{transform:rotate(90deg);}
+.event-card .ename{font-weight:700;font-size:13.5px;white-space:nowrap;}
+.event-card .edate{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.event-card .ebody{display:none;padding:0 14px 14px;border-top:1px solid var(--line);}
+.event-card .ebody.open{display:block;padding-top:10px;}
 .team-line{font-size:12.5px;color:var(--ink);margin-top:4px;}
 .team-line b{color:var(--muted);font-weight:600;font-size:11px;margin-right:6px;}
 .chip{display:inline-block;font-size:11.5px;background:var(--paper-dim);padding:3px 9px;border-radius:20px;margin:2px 3px 2px 0;}
@@ -106,6 +111,19 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .bar-track{height:7px;border-radius:5px;background:var(--paper-dim);overflow:hidden;}
 .bar-fill{height:100%;background:var(--amber);border-radius:5px;transition:width .2s;}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px;}
+.dm-event-card{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;background:var(--card);}
+.dm-row{display:flex;align-items:stretch;border-bottom:1px solid var(--line);}
+.dm-row:last-child{border-bottom:none;}
+.dm-row-label{width:52px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;gap:2px;padding:8px 0;}
+.dm-cells{display:flex;flex-wrap:wrap;flex:1;gap:0;}
+.dm-cell{position:relative;flex:1 1 130px;max-width:200px;padding:12px 14px;cursor:pointer;border-right:1px solid rgba(255,255,255,.5);}
+.dm-cell.pending{background:var(--red-dim);}
+.dm-cell.copied{background:var(--green-dim);}
+.dm-name{font-weight:700;font-size:12.5px;color:var(--ink);}
+.dm-size{font-size:10.5px;margin-top:4px;color:var(--muted);opacity:.85;}
+.dm-size-input{display:none;margin-top:4px;width:90px;font-size:11px;padding:3px 5px;border:1px solid rgba(0,0,0,.2);border-radius:5px;background:rgba(255,255,255,.8);}
+.dm-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.15);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;cursor:pointer;}
+.dm-add{flex:1 1 100px;max-width:140px;display:flex;align-items:center;justify-content:center;padding:12px 10px;border:1px dashed var(--line);cursor:pointer;text-align:center;font-size:11.5px;color:var(--amber);font-weight:700;}
 .fab{position:fixed;bottom:20px;right:18px;z-index:60;background:var(--amber);color:#fff;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;box-shadow:0 4px 14px rgba(232,103,10,.35);border:none;cursor:pointer;}
 </style>
 </head>
@@ -115,25 +133,34 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
+const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[]};
 const EMPLOYEES = [
-  {id:'e1', name:'Aman Verma', role:'Lead Photographer', type:'inhouse'},
-  {id:'e2', name:'Rohit Sharma', role:'Candid Photographer', type:'inhouse'},
-  {id:'e3', name:'Neha Kapoor', role:'Candid Photographer', type:'inhouse'},
-  {id:'e4', name:'Vikram Rao', role:'Cinematographer', type:'inhouse'},
-  {id:'e5', name:'Sameer Khan', role:'Drone Operator', type:'inhouse'},
-  {id:'e6', name:'Divya Singh', role:'Photo Editor', type:'inhouse'},
-  {id:'e7', name:'Arjun Patel', role:'Video Editor', type:'inhouse'},
-  {id:'e8', name:'Ritu Malhotra', role:'Delivery Manager', type:'inhouse'},
+  {id:'e1', name:'Aman Verma', title:'Lead Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
+  {id:'e2', name:'Rohit Sharma', title:'Candid Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
+  {id:'e3', name:'Neha Kapoor', title:'Candid Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
+  {id:'e4', name:'Vikram Rao', title:'Cinematographer', type:'inhouse', accountRole:'staff', skills:['cine']},
+  {id:'e5', name:'Sameer Khan', title:'Drone Operator', type:'inhouse', accountRole:'staff', skills:['cine']},
+  {id:'e6', name:'Divya Singh', title:'Photo Editor', type:'inhouse', accountRole:'staff', skills:['lightroom','photoshop']},
+  {id:'e7', name:'Arjun Patel', title:'Video Editor', type:'inhouse', accountRole:'staff', skills:['teaser','instacut','story','reels','fullVideo']},
+  {id:'e8', name:'Ritu Malhotra', title:'Delivery Manager', type:'inhouse', accountRole:'manager', skills:['videoBook']},
 ];
 const FREELANCERS = [
-  {id:'f1', name:'Manish Tiwari', role:'Candid Photographer', type:'freelancer'},
-  {id:'f2', name:'Suresh Yadav', role:'Cinematographer', type:'freelancer'},
-  {id:'f3', name:'Pooja Bhatt', role:'Photo Editor', type:'freelancer'},
-  {id:'f4', name:'Deepak Joshi', role:'Video Editor', type:'freelancer'},
+  {id:'f1', name:'Manish Tiwari', title:'Candid Photographer', type:'freelancer'},
+  {id:'f2', name:'Suresh Yadav', title:'Cinematographer', type:'freelancer'},
+  {id:'f3', name:'Pooja Bhatt', title:'Photo Editor', type:'freelancer'},
+  {id:'f4', name:'Deepak Joshi', title:'Video Editor', type:'freelancer'},
 ];
 const ALL_PEOPLE = [...EMPLOYEES, ...FREELANCERS];
-function personName(id){ return ALL_PEOPLE.find(p=>p.id===id)?.name || id; }
+const ACCOUNTS = [OWNER, ...EMPLOYEES]; // freelancers have no login
+function personName(id){ return id===OWNER.id ? OWNER.name : (ALL_PEOPLE.find(p=>p.id===id)?.name || id); }
 function isFreelancer(id){ return FREELANCERS.some(p=>p.id===id); }
+const ROLE_LABEL = {owner:'Owner', manager:'Manager', staff:'Staff'};
+const SKILL_LABEL = {still:'Still Photography', cine:'Cinematography', lightroom:'Lightroom', photoshop:'Photoshop',
+  teaser:'Teaser', instacut:'Insta-cut', story:'Wedding Story', reels:'Reels', fullVideo:'Full Video', videoBook:'Video Book'};
+const ALL_SKILLS = Object.keys(SKILL_LABEL);
+let currentUser = null; // set after login
+
+
 
 const STATUS = ['not-started','in-progress','done'];
 const STATUS_LABEL = {'not-started':'Not Started','in-progress':'In Progress','done':'Done'};
@@ -174,9 +201,7 @@ function newVideoEditingObj(events){
   return obj;
 }
 function newDataManagementObj(events){
-  const evData={};
-  events.forEach(ev=> evData[ev.id]={still:'pending', video:'pending'});
-  return {hardDisks:[], backupHardDisks:[], events:evData};
+  return {hardDisks:[], events:{}}; // events[id].still/video = [{pid,status,dataSize}], lazy-initialized from event team
 }
 function weddingWideTracks(w){
   return {
@@ -206,7 +231,7 @@ WEDDINGS[0].tracks.allPhotos.status='in-progress';
 WEDDINGS[0].photoEditing.lightroom.status='done';
 WEDDINGS[0].photoEditing.lightroom.assignee='e6';
 WEDDINGS[0].dataManagement.hardDisks=['HD-01 Seagate'];
-WEDDINGS[0].dataManagement.events['ev1'].still='copied';
+WEDDINGS[0].dataManagement.events['ev1']={still:[{pid:'e2', status:'copied', dataSize:'86 GB'}], video:[{pid:'e4', status:'pending', dataSize:''}]};
 
 let currentTab='dashboard';
 let currentWeddingId=null;
@@ -237,21 +262,55 @@ function isDelayed(t){
 
 // ---------- Render shell ----------
 function render(){
+  if(!currentUser){ renderLogin(); return; }
+  const isOwner = currentUser.accountRole==='owner';
+  const isManager = currentUser.accountRole==='manager';
+  const isStaff = currentUser.accountRole==='staff';
   document.getElementById('app').innerHTML = `
     <header class="top">
       <div class="brand">
         <div class="mark"></div>
-        <div><h1>Fotovision ERM</h1><div class="tag">BUILD v2</div></div>
+        <div><h1>Fotovision ERM</h1><div class="tag">${currentUser.name.toUpperCase()} · ${ROLE_LABEL[currentUser.accountRole].toUpperCase()}</div></div>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Switch User</button>
     </header>
     <nav class="tabs">
-      ${tabBtn('dashboard','Dashboard')}
-      ${tabBtn('weddings','Weddings')}
+      ${isStaff ? tabBtn('mytasks','My Tasks') : ''}
+      ${!isStaff ? tabBtn('dashboard','Dashboard') : ''}
+      ${!isStaff ? tabBtn('weddings','Weddings') : ''}
+      ${isOwner ? tabBtn('settings','Settings') : ''}
     </nav>
     <div id="tabContent"></div>
-    <button class="fab" id="fabBtn" onclick="handleFab()">+</button>
+    ${!isStaff ? `<button class="fab" id="fabBtn" onclick="handleFab()">+</button>` : ''}
   `;
   renderTab();
+}
+function logout(){ currentUser=null; currentTab='dashboard'; currentWeddingId=null; render(); }
+function renderLogin(){
+  document.getElementById('app').innerHTML = `
+    <header class="top"><div class="brand"><div class="mark"></div><div><h1>Fotovision ERM</h1><div class="tag">SIGN IN</div></div></div></header>
+    <section class="block" style="margin-top:20px;">
+      <h2>Owner</h2>
+      <div class="wedding-row" onclick="loginAs('${OWNER.id}')"><div class="info"><div class="client">${OWNER.name}</div><div class="meta">Full access</div></div><span class="pill done">Owner</span></div>
+    </section>
+    <section class="block">
+      <h2>Manager</h2>
+      ${EMPLOYEES.filter(p=>p.accountRole==='manager').map(p=>`
+        <div class="wedding-row" onclick="loginAs('${p.id}')"><div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div><span class="pill in-progress">Manager</span></div>
+      `).join('')}
+    </section>
+    <section class="block">
+      <h2>Staff</h2>
+      ${EMPLOYEES.filter(p=>p.accountRole==='staff').map(p=>`
+        <div class="wedding-row" onclick="loginAs('${p.id}')"><div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div><span class="pill not-started">Staff</span></div>
+      `).join('')}
+    </section>
+  `;
+}
+function loginAs(id){
+  currentUser = id===OWNER.id ? OWNER : EMPLOYEES.find(p=>p.id===id);
+  currentTab = currentUser.accountRole==='staff' ? 'mytasks' : 'dashboard';
+  render();
 }
 function handleFab(){
   if(currentWeddingId) openEventModal(currentWeddingId);
@@ -262,7 +321,132 @@ function setTab(id){ currentTab=id; currentWeddingId=null; renderTab(); }
 function renderTab(){
   const el=document.getElementById('tabContent');
   if(currentTab==='dashboard') el.innerHTML=renderDashboard();
+  else if(currentTab==='mytasks') el.innerHTML=renderMyTasks();
+  else if(currentTab==='settings') el.innerHTML=renderSettings();
   else el.innerHTML = currentWeddingId ? renderWeddingDetail(currentWeddingId) : renderWeddingsList();
+}
+
+// ---------- My Tasks (staff view) ----------
+function collectAssignedItems(personId){
+  const items=[];
+  WEDDINGS.forEach(w=>{
+    if(w.photoEditing.lightroom.assignee===personId) items.push({w, label:'Lightroom — Photo Editing', track:w.photoEditing.lightroom});
+    if(w.photoEditing.photoshop.assignee===personId) items.push({w, label:'Photoshop — Photo Editing', track:w.photoEditing.photoshop});
+    VIDEO_EDITING_SINGLE.forEach(t=>{ if(w.videoEditing[t.key].assignee===personId) items.push({w, label:t.label+' — Video Editing', track:w.videoEditing[t.key]}); });
+    w.events.forEach(ev=>{ if(w.videoEditing.fullVideo[ev.id].assignee===personId) items.push({w, label:ev.name+' — Full Video', track:w.videoEditing.fullVideo[ev.id]}); });
+    WEDDING_TRACKS.forEach(t=>{ if(w.tracks[t.key].assignee===personId) items.push({w, label:t.label, track:w.tracks[t.key]}); });
+  });
+  return items;
+}
+function renderMyTasks(){
+  const items=collectAssignedItems(currentUser.id);
+  const pending=items.filter(i=>i.track.status!=='done');
+  const done=items.filter(i=>i.track.status==='done');
+  return `
+    <section class="block">
+      <h2>Assigned To Me</h2>
+      ${pending.map(renderMyTaskRow).join('') || emptyState('Nothing assigned to you right now')}
+    </section>
+    ${done.length?`<section class="block"><h2>Completed</h2>${done.map(renderMyTaskRow).join('')}</section>`:''}
+  `;
+}
+function renderMyTaskRow(item){
+  const delayed=isDelayed(item.track);
+  const statusCls = delayed ? 'delayed' : item.track.status;
+  const statusText = delayed ? 'Delayed' : STATUS_LABEL[item.track.status];
+  return `
+    <div class="track-row">
+      <span class="pill ${statusCls}">${statusText}</span>
+      <span class="tname">${item.label} <span class="tmeta">— ${item.w.client}</span></span>
+      <select onchange="updateMyTask('${item.w.id}','${item.label}',this.value)">
+        ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+      </select>
+      ${item.track.due?`<span class="tmeta">due ${fmtDate(item.track.due)}</span>`:''}
+    </div>
+  `;
+}
+function updateMyTask(weddingId, label, value){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const items=collectAssignedItems(currentUser.id).filter(i=>i.w.id===weddingId && i.label===label);
+  if(items.length) items[0].track.status=value;
+  renderTab();
+}
+
+// ---------- Settings (owner only): staff directory ----------
+function renderSettings(){
+  return `
+    <section class="block">
+      <h2>Staff Directory <button class="btn-add" onclick="openStaffModal()">+ Add Staff</button></h2>
+      ${EMPLOYEES.map(p=>`
+        <div class="wedding-row" onclick="openStaffModal('${p.id}')">
+          <div class="info">
+            <div class="client">${p.name}</div>
+            <div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div>
+          </div>
+          <span class="pill ${p.accountRole==='owner'?'done':p.accountRole==='manager'?'in-progress':'not-started'}">${ROLE_LABEL[p.accountRole]}</span>
+        </div>
+      `).join('')}
+    </section>
+    <section class="block">
+      <h2>Freelancers <span class="tmeta">(no login — assignable only)</span></h2>
+      ${FREELANCERS.map(p=>`
+        <div class="wedding-row" style="cursor:default;">
+          <div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div>
+        </div>
+      `).join('')}
+    </section>
+  `;
+}
+function openStaffModal(personId){
+  const p = personId ? EMPLOYEES.find(x=>x.id===personId) : null;
+  document.getElementById('modalBody').innerHTML = `
+    <h3>${p?'Edit Staff':'Add Staff'}</h3>
+    <div class="row2">
+      <div class="field"><label>Name</label><input id="f_stName" value="${p?p.name:''}"></div>
+      <div class="field"><label>Job Title</label><input id="f_stTitle" value="${p?p.title:''}" placeholder="e.g. Photo Editor"></div>
+    </div>
+    <div class="field">
+      <label>Account Role</label>
+      <select id="f_stRole">
+        <option value="staff" ${p&&p.accountRole==='staff'?'selected':''}>Staff — sees only own tasks</option>
+        <option value="manager" ${p&&p.accountRole==='manager'?'selected':''}>Manager — builds teams, manages data</option>
+        <option value="owner" ${p&&p.accountRole==='owner'?'selected':''}>Owner — full access</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Skills (what work they can be assigned)</label>
+      <div class="staff-check-grid">
+        ${ALL_SKILLS.map(s=>`<label class="staff-check"><input type="checkbox" value="${s}" class="skillbox" ${p&&(p.skills||[]).includes(s)?'checked':''}> ${SKILL_LABEL[s]}</label>`).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      ${p?`<button class="btn btn-ghost" style="color:var(--red);" onclick="deleteStaff('${p.id}')">Remove</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaff('${personId||''}')">Save</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function saveStaff(personId){
+  const name=document.getElementById('f_stName').value.trim();
+  const title=document.getElementById('f_stTitle').value.trim();
+  const accountRole=document.getElementById('f_stRole').value;
+  const skills=[...document.querySelectorAll('.skillbox:checked')].map(c=>c.value);
+  if(!name){ alert('Name is required'); return; }
+  if(personId){
+    const p=EMPLOYEES.find(x=>x.id===personId);
+    p.name=name; p.title=title; p.accountRole=accountRole; p.skills=skills;
+  } else {
+    EMPLOYEES.push({id:'e'+Math.random().toString(36).slice(2,9), name, title, type:'inhouse', accountRole, skills});
+  }
+  closeModal();
+  renderTab();
+}
+function deleteStaff(personId){
+  const idx=EMPLOYEES.findIndex(x=>x.id===personId);
+  if(idx>-1) EMPLOYEES.splice(idx,1);
+  closeModal();
+  renderTab();
 }
 
 // ---------- Dashboard ----------
@@ -367,17 +551,30 @@ function renderWeddingDetail(id){
 }
 
 function renderEventCard(weddingId, ev){
+  const teamCount = ev.still.length + ev.cine.length;
   return `
     <div class="event-card">
-      <div class="ehead">
-        <div class="ename">${ev.name}</div>
-        <div class="edate">${fmtDate(ev.date)} · ${ev.venue||'venue TBD'}</div>
+      <div class="ehead" onclick="toggleEventCard('${ev.id}')">
+        <div class="ehead-left">
+          <span class="echev" id="chev_${ev.id}">▶</span>
+          <span class="ename">${ev.name}</span>
+        </div>
+        <div class="edate">${fmtDate(ev.date)} · ${teamCount} assigned</div>
       </div>
-      <div class="team-line"><b>STILL</b>${ev.still.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
-      <div class="team-line"><b>CINE</b>${ev.cine.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="openEventModal('${weddingId}','${ev.id}')">Edit Team</button>
+      <div class="ebody" id="body_${ev.id}">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">${ev.venue||'venue TBD'}</div>
+        <div class="team-line"><b>STILL</b>${ev.still.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
+        <div class="team-line"><b>CINE</b>${ev.cine.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="event.stopPropagation();openEventModal('${weddingId}','${ev.id}')">Edit Team</button>
+      </div>
     </div>
   `;
+}
+function toggleEventCard(eventId){
+  const body=document.getElementById('body_'+eventId);
+  const chev=document.getElementById('chev_'+eventId);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
 }
 
 // ---------- Photo Editing (Lightroom -> Photoshop, sequential) ----------
@@ -447,7 +644,15 @@ function updateTrack(weddingId, refStr, field, value){
   renderTab();
 }
 
-// ---------- Data Management (mirrors attendance app's wedding groups: hard disks + copy status) ----------
+// ---------- Data Management (mirrors attendance app: auto-fills from event team, colored cells, tap to toggle, + Add for extra people) ----------
+function ensureDmInit(w, ev){
+  if(!w.dataManagement.events[ev.id]){
+    w.dataManagement.events[ev.id] = {
+      still: ev.still.map(pid=>({pid, status:'pending', dataSize:''})),
+      video: ev.cine.map(pid=>({pid, status:'pending', dataSize:''}))
+    };
+  }
+}
 function renderDataManagement(w){
   const dm=w.dataManagement;
   return `
@@ -462,26 +667,90 @@ function renderDataManagement(w){
       </div>
     </div>
     ${w.events.map(ev=>{
-      const ed=dm.events[ev.id] || (dm.events[ev.id]={still:'pending',video:'pending'});
+      ensureDmInit(w, ev);
       return `
-      <div class="track-row">
-        <span class="pill ${ed.still==='copied'?'done':'delayed'}">${ed.still==='copied'?'Copied':'Pending'}</span>
-        <span class="tname">${ev.name} — Photo Data</span>
-        <select onchange="updateDataCopy('${w.id}','${ev.id}','still',this.value)">
-          <option value="pending" ${ed.still==='pending'?'selected':''}>Pending</option>
-          <option value="copied" ${ed.still==='copied'?'selected':''}>Copied + Backed Up</option>
-        </select>
-      </div>
-      <div class="track-row">
-        <span class="pill ${ed.video==='copied'?'done':'delayed'}">${ed.video==='copied'?'Copied':'Pending'}</span>
-        <span class="tname">${ev.name} — Video Data</span>
-        <select onchange="updateDataCopy('${w.id}','${ev.id}','video',this.value)">
-          <option value="pending" ${ed.video==='pending'?'selected':''}>Pending</option>
-          <option value="copied" ${ed.video==='copied'?'selected':''}>Copied + Backed Up</option>
-        </select>
-      </div>
-    `;}).join('') || emptyState('Add events first to track their data copy status')}
+        <div class="dm-event-card">
+          <div class="track-group-title" style="margin-bottom:10px;">${fmtDate(ev.date)} — ${ev.name}</div>
+          ${renderDmFlexRow(w, ev, 'still', '📷', 'Still')}
+          ${renderDmFlexRow(w, ev, 'video', '🎬', 'Video')}
+        </div>
+      `;
+    }).join('') || emptyState('Add events first to track their data copy status')}
   `;
+}
+function renderDmFlexRow(w, ev, cat, icon, label){
+  const list=w.dataManagement.events[ev.id][cat];
+  const cells=list.map((entry,i)=>{
+    const cellId=`dmsize_${w.id}_${ev.id}_${cat}_${i}`;
+    return `
+      <div class="dm-cell ${entry.status}" onclick="toggleDmStatus('${w.id}','${ev.id}','${cat}',${i})">
+        <span class="dm-remove" onclick="event.stopPropagation();removeDmPerson('${w.id}','${ev.id}','${cat}',${i})">×</span>
+        <div class="dm-name">${personName(entry.pid)}</div>
+        <div class="dm-size" id="${cellId}_display" onclick="event.stopPropagation();openDmSizeInput('${cellId}','${w.id}','${ev.id}','${cat}',${i})">${entry.dataSize||'+ size'}</div>
+        <input type="text" class="dm-size-input" id="${cellId}_input" placeholder="e.g. 120 GB" value="${entry.dataSize}"
+          onclick="event.stopPropagation()"
+          onblur="saveDmSize('${cellId}','${w.id}','${ev.id}','${cat}',${i},this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()">
+      </div>`;
+  }).join('');
+  return `
+    <div class="dm-row">
+      <div class="dm-row-label">${icon}<br>${label}</div>
+      <div class="dm-cells">
+        ${cells}
+        <div class="dm-add" onclick="openAddDmPerson('${w.id}','${ev.id}','${cat}')">+ Add</div>
+      </div>
+    </div>
+  `;
+}
+function openDmSizeInput(cellId){
+  document.getElementById(cellId+'_display').style.display='none';
+  const inp=document.getElementById(cellId+'_input');
+  inp.style.display='block';
+  inp.focus();
+}
+function saveDmSize(cellId, weddingId, eventId, cat, idx, value){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.events[eventId][cat][idx].dataSize=value;
+  renderTab();
+}
+function toggleDmStatus(weddingId, eventId, cat, idx){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const entry=w.dataManagement.events[eventId][cat][idx];
+  entry.status = entry.status==='copied' ? 'pending' : 'copied';
+  renderTab();
+}
+function removeDmPerson(weddingId, eventId, cat, idx){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.events[eventId][cat].splice(idx,1);
+  renderTab();
+}
+function openAddDmPerson(weddingId, eventId, cat){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
+  const options=ALL_PEOPLE.filter(p=>!already.includes(p.id));
+  document.getElementById('modalBody').innerHTML = `
+    <h3>Add Person — ${cat==='still'?'Still':'Video'} Data</h3>
+    <div class="field">
+      <label>Select Person</label>
+      <select id="f_dmPerson">
+        ${options.map(p=>`<option value="${p.id}">${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('') || '<option value="">No one left to add</option>'}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAddDmPerson('${weddingId}','${eventId}','${cat}')">Add</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function saveAddDmPerson(weddingId, eventId, cat){
+  const pid=document.getElementById('f_dmPerson').value;
+  if(!pid) { closeModal(); return; }
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.events[eventId][cat].push({pid, status:'pending', dataSize:''});
+  closeModal();
+  renderTab();
 }
 function addHardDisk(weddingId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
@@ -494,11 +763,6 @@ function addHardDisk(weddingId){
 function removeHardDisk(weddingId, idx){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   w.dataManagement.hardDisks.splice(idx,1);
-  renderTab();
-}
-function updateDataCopy(weddingId, eventId, kind, value){
-  const w=WEDDINGS.find(x=>x.id===weddingId);
-  w.dataManagement.events[eventId][kind]=value;
   renderTab();
 }
 
@@ -545,8 +809,8 @@ function saveNewWedding(){
 function personCheckboxes(selected){
   return `
     <div class="staff-check-grid">
-      ${EMPLOYEES.map(p=>`<label class="staff-check"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--muted);font-size:10.5px;">(${p.role})</span></label>`).join('')}
-      ${FREELANCERS.map(p=>`<label class="staff-check freelancer"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--blue);font-size:10.5px;">(freelancer · ${p.role})</span></label>`).join('')}
+      ${EMPLOYEES.map(p=>`<label class="staff-check"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--muted);font-size:10.5px;">(${p.title})</span></label>`).join('')}
+      ${FREELANCERS.map(p=>`<label class="staff-check freelancer"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--blue);font-size:10.5px;">(freelancer · ${p.title})</span></label>`).join('')}
     </div>
   `;
 }
@@ -585,7 +849,7 @@ function saveEvent(weddingId, eventId){
     const newEvId=genEventId();
     w.events.push({id:newEvId, name, date, venue, still, cine});
     w.videoEditing.fullVideo[newEvId]=newTrackObj();
-    w.dataManagement.events[newEvId]={still:'pending', video:'pending'};
+    // dataManagement auto-initializes from event team on first render (see ensureDmInit)
   }
   closeModal();
   renderTab();
@@ -594,7 +858,7 @@ function deleteEvent(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   w.events=w.events.filter(e=>e.id!==eventId);
   delete w.videoEditing.fullVideo[eventId];
-  delete w.dataManagement.events[eventId];
+  Object.keys(w.dataManagement.events).forEach(k=>{ if(k===eventId) delete w.dataManagement.events[k]; });
   closeModal();
   renderTab();
 }
@@ -604,7 +868,8 @@ document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target
 
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
-  addHardDisk, removeHardDisk, updateDataCopy, handleFab});
+  addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
+  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff});
 
 render();
 </script>
