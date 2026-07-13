@@ -125,6 +125,11 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .dm-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.15);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;cursor:pointer;}
 .dm-add{flex:1 1 100px;max-width:140px;display:flex;align-items:center;justify-content:center;padding:12px 10px;border:1px dashed var(--line);cursor:pointer;text-align:center;font-size:11.5px;color:var(--amber);font-weight:700;}
 .fab{position:fixed;bottom:20px;right:18px;z-index:60;background:var(--amber);color:#fff;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;box-shadow:0 4px 14px rgba(232,103,10,.35);border:none;cursor:pointer;}
+.fev-box{border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:var(--card);}
+.fev-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line);}
+.fev-row:first-of-type{border-top:none;margin-top:8px;}
+.fev-row select{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);}
+.fev-row input[type=text]{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);width:130px;}
 </style>
 </head>
 <body>
@@ -171,7 +176,8 @@ const WEDDING_TRACKS = [
   {key:'allPhotos', label:'All Photographs (watermarked, low-res)', platform:'Google Drive'},
   {key:'photoFrames', label:'Photo Frames', platform:''},
   {key:'videoBook', label:'Video Book', platform:'', defaultAssignee:'e8'},
-  {key:'album', label:'Album (design + upload)', platform:'Google Drive'},
+  {key:'albumDesign', label:'Album Design', platform:''},
+  {key:'albumUpload', label:'Album Upload', platform:'Google Drive'},
   {key:'printing', label:'Album Printing', platform:''},
   {key:'delivery', label:'Delivery to Client', platform:''},
   {key:'deliveryDone', label:'Delivery Done', platform:''},
@@ -185,12 +191,12 @@ const VIDEO_EDITING_SINGLE = [
 ];
 
 function newTrackObj(defaultAssignee){
-  return {status:'not-started', assignee:defaultAssignee||'', due:'', link:''};
+  return {status:'not-started', assignee:defaultAssignee||'', start:'', due:'', link:''};
 }
 function newPhotoEditingObj(){
   return {
-    lightroom: {status:'not-started', assignee:'', due:'', link:''},
-    photoshop: {status:'not-started', assignee:'', due:''}
+    lightroom: {status:'not-started', assignee:'', start:'', due:'', link:''},
+    photoshop: {status:'not-started', assignee:'', start:'', due:''}
   };
 }
 function newVideoEditingObj(events){
@@ -206,7 +212,7 @@ function newDataManagementObj(events){
 function weddingWideTracks(w){
   return {
     allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj('e8'),
-    album:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
+    albumDesign:newTrackObj(), albumUpload:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
   };
 }
 
@@ -239,6 +245,20 @@ let currentWeddingId=null;
 function genId(){ return 'w'+Math.random().toString(36).slice(2,9); }
 function genEventId(){ return 'ev'+Math.random().toString(36).slice(2,9); }
 function fmtDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function next30DayOptions(selected){
+  let opts = `<option value="">—</option>`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(let i=0;i<=30;i++){
+    const d=new Date(today); d.setDate(d.getDate()+i);
+    const iso=d.toISOString().slice(0,10);
+    const label=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    opts += `<option value="${iso}" ${selected===iso?'selected':''}>${label}</option>`;
+  }
+  if(selected && !opts.includes(`value="${selected}"`)){
+    opts += `<option value="${selected}" selected>${fmtDate(selected)} (past)</option>`;
+  }
+  return opts;
+}
 function dateChip(d){ const dt=new Date(d+'T00:00:00'); return {day:dt.getDate(), mon:dt.toLocaleDateString('en-IN',{month:'short'})}; }
 
 // ---------- progress calc ----------
@@ -534,8 +554,9 @@ function renderWeddingDetail(id){
       <div class="track-group">
         <div class="track-group-title">Video Editing</div>
         ${VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('')}
-        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;">Full Event Video — by event</div>
-        ${w.events.map(ev=>renderTrackRow(w.id, {key:'fullVideo_'+ev.id, label:ev.name+' — Full Video', platform:'Google Drive'}, w.videoEditing.fullVideo[ev.id], {kind:'fullVideo', eventId:ev.id})).join('')}
+      </div>
+      <div class="track-group">
+        ${renderFullVideoBox(w)}
       </div>
 
       <div class="track-group">
@@ -590,7 +611,12 @@ function renderPhotoEditingRow(w, subKey, label, hasLink){
         <option value="">Assign to...</option>
         ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
-      <input type="date" ${locked?'disabled':''} value="${track.due}" onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)">
+      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
+        ${next30DayOptions(track.start)}
+      </select>
+      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)" title="Due Date">
+        ${next30DayOptions(track.due)}
+      </select>
       ${hasLink?`<input type="text" ${locked?'disabled':''} placeholder="paste FotoOwl link" value="${track.link||''}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
       ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
     </div>
@@ -619,9 +645,46 @@ function renderTrackRow(weddingId, trackDef, track, ref){
         <option value="">Assign to...</option>
         ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
-      <input type="date" value="${track.due}" onchange="updateTrack('${weddingId}','${refStr}','due',this.value)">
+      <select onchange="updateTrack('${weddingId}','${refStr}','start',this.value)" title="Start Date">
+        ${next30DayOptions(track.start)}
+      </select>
+      <select onchange="updateTrack('${weddingId}','${refStr}','due',this.value)" title="Due Date">
+        ${next30DayOptions(track.due)}
+      </select>
       <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
       ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}
+    </div>
+  `;
+}
+// ---------- Full Event Video: one box, all events listed inside ----------
+function renderFullVideoBox(w){
+  if(!w.events.length) return emptyState('Add events first');
+  return `
+    <div class="fev-box">
+      <div class="track-group-title" style="margin-bottom:2px;">Full Event Video <span class="tmeta">(Google Drive)</span></div>
+      ${w.events.map(ev=>{
+        const track=w.videoEditing.fullVideo[ev.id];
+        const delayed=isDelayed(track);
+        const statusCls = delayed ? 'delayed' : track.status;
+        const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
+        const ref=encodeURIComponent(JSON.stringify({kind:'fullVideo', eventId:ev.id}));
+        return `
+          <div class="fev-row">
+            <span class="pill ${statusCls}">${statusText}</span>
+            <span class="tname">${ev.name}</span>
+            <select onchange="updateTrack('${w.id}','${ref}','status',this.value)">
+              ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+            </select>
+            <select onchange="updateTrack('${w.id}','${ref}','assignee',this.value)">
+              <option value="">Assign to...</option>
+              ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+            </select>
+            <select onchange="updateTrack('${w.id}','${ref}','start',this.value)" title="Start Date">${next30DayOptions(track.start)}</select>
+            <select onchange="updateTrack('${w.id}','${ref}','due',this.value)" title="Due Date">${next30DayOptions(track.due)}</select>
+            <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${w.id}','${ref}','link',this.value)">
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 }
@@ -720,7 +783,21 @@ function toggleDmStatus(weddingId, eventId, cat, idx){
 }
 function removeDmPerson(weddingId, eventId, cat, idx){
   const w=WEDDINGS.find(x=>x.id===weddingId);
+  const entry=w.dataManagement.events[eventId][cat][idx];
+  document.getElementById('modalBody').innerHTML = `
+    <h3>Remove ${personName(entry.pid)}?</h3>
+    <p style="font-size:13.5px;color:var(--muted);margin-bottom:6px;">This removes them from the ${cat==='still'?'Still':'Video'} data tracking for this event${entry.dataSize?` — recorded size (${entry.dataSize}) will be lost.`:'.'}</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--red);" onclick="confirmRemoveDmPerson('${weddingId}','${eventId}','${cat}',${idx})">Remove</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function confirmRemoveDmPerson(weddingId, eventId, cat, idx){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
   w.dataManagement.events[eventId][cat].splice(idx,1);
+  closeModal();
   renderTab();
 }
 function openAddDmPerson(weddingId, eventId, cat){
@@ -876,7 +953,7 @@ document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
-  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff});
+  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson});
 
 render();
 </script>
