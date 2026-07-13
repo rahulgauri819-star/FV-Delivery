@@ -146,6 +146,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
+const APP_VERSION = 'v19';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [
   {id:'e1', name:'Aman Verma', title:'Lead Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
@@ -311,7 +312,7 @@ function render(){
     <header class="top">
       <div class="brand">
         <div class="mark"></div>
-        <div><h1>Fotovision ERM</h1><div class="tag">${currentUser.name.toUpperCase()} · ${ROLE_LABEL[currentUser.accountRole].toUpperCase()}</div></div>
+        <div><h1>Fotovision ERM</h1><div class="tag">${APP_VERSION} · ${currentUser.name.toUpperCase()} · ${ROLE_LABEL[currentUser.accountRole].toUpperCase()}</div></div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Switch User</button>
     </header>
@@ -333,7 +334,7 @@ function logout(){
 }
 function renderLogin(){
   document.getElementById('app').innerHTML = `
-    <header class="top"><div class="brand"><div class="mark"></div><div><h1>Fotovision ERM</h1><div class="tag">SIGN IN</div></div></div></header>
+    <header class="top"><div class="brand"><div class="mark"></div><div><h1>Fotovision ERM</h1><div class="tag">${APP_VERSION} · SIGN IN</div></div></div></header>
     <section class="block" style="margin-top:20px;max-width:420px;">
       <div class="card">
         <div class="field"><label>Login ID</label><input id="f_loginId" placeholder="e.g. admin"></div>
