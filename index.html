@@ -146,24 +146,10 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
-const EMPLOYEES = [
-  {id:'e1', name:'Aman Verma', title:'Lead Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
-  {id:'e2', name:'Rohit Sharma', title:'Candid Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
-  {id:'e3', name:'Neha Kapoor', title:'Candid Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
-  {id:'e4', name:'Vikram Rao', title:'Cinematographer', type:'inhouse', accountRole:'staff', skills:['cine']},
-  {id:'e5', name:'Sameer Khan', title:'Drone Operator', type:'inhouse', accountRole:'staff', skills:['cine']},
-  {id:'e6', name:'Divya Singh', title:'Photo Editor', type:'inhouse', accountRole:'staff', skills:['lightroom','photoshop']},
-  {id:'e7', name:'Arjun Patel', title:'Video Editor', type:'inhouse', accountRole:'staff', skills:['teaser','instacut','story','reels','fullVideo']},
-  {id:'e8', name:'Ritu Malhotra', title:'Delivery Manager', type:'inhouse', accountRole:'manager', skills:['videoBook']},
-];
-const FREELANCERS = [
-  {id:'f1', name:'Manish Tiwari', title:'Candid Photographer', type:'freelancer'},
-  {id:'f2', name:'Suresh Yadav', title:'Cinematographer', type:'freelancer'},
-  {id:'f3', name:'Pooja Bhatt', title:'Photo Editor', type:'freelancer'},
-  {id:'f4', name:'Deepak Joshi', title:'Video Editor', type:'freelancer'},
-];
+const EMPLOYEES = [];
+const FREELANCERS = [];
 EMPLOYEES.forEach(p=>{ if(p.loginId===undefined) p.loginId=p.name.split(' ')[0].toLowerCase(); if(p.password===undefined) p.password='123'; });
 const ALL_PEOPLE = [...EMPLOYEES, ...FREELANCERS];
 const ACCOUNTS = [OWNER, ...EMPLOYEES]; // freelancers have no login
@@ -185,7 +171,7 @@ const DATA_STATUS = ['pending','copied'];
 const WEDDING_TRACKS = [
   {key:'allPhotos', label:'All Photographs (watermarked, low-res)', platform:'Google Drive'},
   {key:'photoFrames', label:'Photo Frames', platform:''},
-  {key:'videoBook', label:'Video Book', platform:'', defaultAssignee:'e8', skill:'videoBook'},
+  {key:'videoBook', label:'Video Book', platform:'', skill:'videoBook'},
   {key:'albumDesign', label:'Album Design', platform:''},
   {key:'albumUpload', label:'Album Upload', platform:'Google Drive'},
   {key:'printing', label:'Album Printing', platform:''},
@@ -221,33 +207,13 @@ function newDataManagementObj(events){
 }
 function weddingWideTracks(w){
   return {
-    allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj('e8'),
+    allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj(),
     albumDesign:newTrackObj(), albumUpload:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
   };
 }
 
-// ---------- Sample weddings ----------
-let WEDDINGS = [
-  {
-    id:'w1', client:'Karan & Simran', date:'2026-07-18',
-    events:[
-      {id:'ev1', name:'Mehendi', date:'2026-07-18', venue:'Farmhouse, Chattarpur', still:['e2'], cine:['e4']},
-      {id:'ev2', name:'Sangeet', date:'2026-07-19', venue:'ITC Maurya', still:['e2','f1'], cine:['e4','f2']},
-      {id:'ev3', name:'Wedding', date:'2026-07-20', venue:'ITC Maurya', still:['e1','e2','f1'], cine:['e4','e5']},
-    ],
-    photoEditing:newPhotoEditingObj(),
-    videoEditing:null, // set below once events exist
-    dataManagement:null,
-    tracks: weddingWideTracks()
-  }
-];
-WEDDINGS[0].videoEditing = newVideoEditingObj(WEDDINGS[0].events);
-WEDDINGS[0].dataManagement = newDataManagementObj(WEDDINGS[0].events);
-WEDDINGS[0].tracks.allPhotos.status='in-progress';
-WEDDINGS[0].photoEditing.lightroom.status='done';
-WEDDINGS[0].photoEditing.lightroom.assignee='e6';
-WEDDINGS[0].dataManagement.hardDisks=['HD-01 Seagate'];
-WEDDINGS[0].dataManagement.events['ev1']={still:[{pid:'e2', status:'copied', dataSize:'86 GB'}], video:[{pid:'e4', status:'pending', dataSize:''}]};
+// ---------- Weddings (starts empty) ----------
+let WEDDINGS = [];
 
 let currentTab='dashboard';
 let currentWeddingId=null;
