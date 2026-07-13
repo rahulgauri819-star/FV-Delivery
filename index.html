@@ -146,7 +146,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[]};
+const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], email:''};
 const EMPLOYEES = [
   {id:'e1', name:'Aman Verma', title:'Lead Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
   {id:'e2', name:'Rohit Sharma', title:'Candid Photographer', type:'inhouse', accountRole:'staff', skills:['still']},
@@ -163,6 +163,7 @@ const FREELANCERS = [
   {id:'f3', name:'Pooja Bhatt', title:'Photo Editor', type:'freelancer'},
   {id:'f4', name:'Deepak Joshi', title:'Video Editor', type:'freelancer'},
 ];
+EMPLOYEES.forEach(p=>{ if(p.email===undefined) p.email=''; });
 const ALL_PEOPLE = [...EMPLOYEES, ...FREELANCERS];
 const ACCOUNTS = [OWNER, ...EMPLOYEES]; // freelancers have no login
 function personName(id){ return id===OWNER.id ? OWNER.name : (ALL_PEOPLE.find(p=>p.id===id)?.name || id); }
@@ -326,27 +327,51 @@ function render(){
   `;
   renderTab();
 }
-function logout(){ currentUser=null; currentTab='dashboard'; currentWeddingId=null; render(); }
+function logout(){
+  currentUser=null; currentTab='dashboard'; currentWeddingId=null;
+  if(window.fvSignOut) window.fvSignOut();
+  render();
+}
 function renderLogin(){
   document.getElementById('app').innerHTML = `
     <header class="top"><div class="brand"><div class="mark"></div><div><h1>Fotovision ERM</h1><div class="tag">SIGN IN</div></div></div></header>
-    <section class="block" style="margin-top:20px;">
-      <h2>Owner</h2>
-      <div class="wedding-row" onclick="loginAs('${OWNER.id}')"><div class="info"><div class="client">${OWNER.name}</div><div class="meta">Full access</div></div><span class="pill done">Owner</span></div>
-    </section>
-    <section class="block">
-      <h2>Manager</h2>
-      ${EMPLOYEES.filter(p=>p.accountRole==='manager').map(p=>`
-        <div class="wedding-row" onclick="loginAs('${p.id}')"><div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div><span class="pill in-progress">Manager</span></div>
-      `).join('')}
-    </section>
-    <section class="block">
-      <h2>Staff</h2>
-      ${EMPLOYEES.filter(p=>p.accountRole==='staff').map(p=>`
-        <div class="wedding-row" onclick="loginAs('${p.id}')"><div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div><span class="pill not-started">Staff</span></div>
-      `).join('')}
+    <section class="block" style="margin-top:20px;max-width:420px;">
+      <div class="card">
+        <div class="field"><label>Email</label><input id="f_loginEmail" type="email" placeholder="you@fotovision.co.in"></div>
+        <div class="field"><label>Password</label><input id="f_loginPassword" type="password"></div>
+        <div id="loginError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="attemptLogin()">Sign In</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">Ask your Owner or Manager to create your account in Settings if you don't have one yet.</div>
     </section>
   `;
+}
+function findAccountByEmail(email){
+  email=(email||'').trim().toLowerCase();
+  if(!email) return null;
+  if(OWNER.email && OWNER.email.toLowerCase()===email) return OWNER;
+  return EMPLOYEES.find(p=>p.email && p.email.toLowerCase()===email) || null;
+}
+async function attemptLogin(){
+  const email=document.getElementById('f_loginEmail').value.trim();
+  const password=document.getElementById('f_loginPassword').value;
+  const errEl=document.getElementById('loginError');
+  errEl.textContent='';
+  if(!email||!password){ errEl.textContent='Enter email and password.'; return; }
+  if(!window.fvSignIn){ errEl.textContent='Still connecting to Firebase, try again in a moment.'; return; }
+  try{
+    await window.fvSignIn(email, password);
+    const account=findAccountByEmail(email);
+    if(!account){
+      errEl.textContent='Signed in, but no staff record matches this email. Ask your Owner to add you in Settings with this exact email.';
+      return;
+    }
+    currentUser=account;
+    currentTab=account.accountRole==='staff' ? 'mytasks' : 'dashboard';
+    render();
+  } catch(e){
+    errEl.textContent = 'Sign in failed: ' + (e.message||'check your email and password.');
+  }
 }
 function loginAs(id){
   currentUser = id===OWNER.id ? OWNER : EMPLOYEES.find(p=>p.id===id);
@@ -366,6 +391,7 @@ function renderTab(){
   else if(currentTab==='assignwork') el.innerHTML=renderAssignWork();
   else if(currentTab==='settings') el.innerHTML=renderSettings();
   else el.innerHTML = currentWeddingId ? renderWeddingDetail(currentWeddingId) : renderWeddingsList();
+  if(window.fvScheduleSave) window.fvScheduleSave();
 }
 
 // ---------- My Tasks / Assign Work (date ledger, shared between staff self-view and owner/manager staff-wise view) ----------
@@ -471,12 +497,29 @@ function renderAssignWork(){
 function renderSettings(){
   return `
     <section class="block">
+      <h2>Your Owner Login</h2>
+      <div class="card">
+        ${OWNER.email ? `
+          <div style="font-size:13.5px;">Signed in as <b>${OWNER.email}</b></div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">To change your password, use Firebase Console → Authentication.</div>
+        ` : `
+          <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">No login set up yet for your Owner account. Set one now so you can sign in from any device.</div>
+          <div class="row2">
+            <div class="field"><label>Email</label><input id="f_ownerEmail" type="email" placeholder="rahul@fotovision.co.in"></div>
+            <div class="field"><label>Password</label><input id="f_ownerPassword" type="password" placeholder="min 6 characters"></div>
+          </div>
+          <div id="ownerAcctError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
+          <button class="btn btn-primary" onclick="saveOwnerAccount()">Create My Login</button>
+        `}
+      </div>
+    </section>
+    <section class="block">
       <h2>Staff Directory <button class="btn-add" onclick="openStaffModal()">+ Add Staff</button></h2>
       ${EMPLOYEES.map(p=>`
         <div class="wedding-row" onclick="openStaffModal('${p.id}')">
           <div class="info">
             <div class="client">${p.name}</div>
-            <div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div>
+            <div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}${p.email?` · ${p.email}`:' · no login set'}</div>
           </div>
           <span class="pill ${p.accountRole==='owner'?'done':p.accountRole==='manager'?'in-progress':'not-started'}">${ROLE_LABEL[p.accountRole]}</span>
         </div>
@@ -514,6 +557,9 @@ function openStaffModal(personId, jumpToWork){
         ${ALL_SKILLS.map(s=>`<label class="staff-check"><input type="checkbox" value="${s}" class="skillbox" ${p&&(p.skills||[]).includes(s)?'checked':''}> ${SKILL_LABEL[s]}</label>`).join('')}
       </div>
     </div>
+    <div class="field"><label>Login Email</label><input id="f_stEmail" type="email" value="${p?(p.email||''):''}" placeholder="name@fotovision.co.in" ${p&&p.email?'disabled':''}></div>
+    ${(!p || !p.email) ? `<div class="field"><label>Set Password (creates their login)</label><input id="f_stPassword" type="password" placeholder="min 6 characters"></div>` : `<div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">Login already created for this email. To change it, remove and re-add this person.</div>`}
+    <div id="staffModalError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
     <div class="modal-actions">
       ${p?`<button class="btn btn-ghost" style="color:var(--red);" onclick="deleteStaff('${p.id}')">Remove</button>`:''}
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -522,23 +568,59 @@ function openStaffModal(personId, jumpToWork){
   `;
   document.getElementById('overlay').classList.add('show');
 }
-function saveStaff(personId, jumpToWork){
+async function saveStaff(personId, jumpToWork){
   const name=document.getElementById('f_stName').value.trim();
   const title=document.getElementById('f_stTitle').value.trim();
   const accountRole=document.getElementById('f_stRole').value;
   const skills=[...document.querySelectorAll('.skillbox:checked')].map(c=>c.value);
+  const emailInput=document.getElementById('f_stEmail');
+  const email=emailInput?emailInput.value.trim():'';
+  const passInput=document.getElementById('f_stPassword');
+  const password=passInput?passInput.value:'';
+  const errEl=document.getElementById('staffModalError');
   if(!name){ alert('Name is required'); return; }
+
+  const existing=personId?EMPLOYEES.find(x=>x.id===personId):null;
+  const needsAccountCreation = email && !(existing && existing.email);
+
+  if(needsAccountCreation){
+    if(!password || password.length<6){ errEl.textContent='Set a password (min 6 characters) to create their login.'; return; }
+    if(!window.fvCreateAccount){ errEl.textContent='Still connecting to Firebase, try again in a moment.'; return; }
+    try{
+      await window.fvCreateAccount(email, password);
+    } catch(e){
+      errEl.textContent = 'Could not create login: ' + (e.message||'try a different email.');
+      return;
+    }
+  }
+
   let newId=personId;
   if(personId){
     const p=EMPLOYEES.find(x=>x.id===personId);
     p.name=name; p.title=title; p.accountRole=accountRole; p.skills=skills;
+    if(email) p.email=email;
   } else {
     newId='e'+Math.random().toString(36).slice(2,9);
-    EMPLOYEES.push({id:newId, name, title, type:'inhouse', accountRole, skills});
+    EMPLOYEES.push({id:newId, name, title, type:'inhouse', accountRole, skills, email});
   }
   closeModal();
   if(jumpToWork){ assignWorkStaffId=newId; }
   renderTab();
+}
+async function saveOwnerAccount(){
+  const email=document.getElementById('f_ownerEmail').value.trim();
+  const password=document.getElementById('f_ownerPassword').value;
+  const errEl=document.getElementById('ownerAcctError');
+  errEl.textContent='';
+  if(!email||!password||password.length<6){ errEl.textContent='Enter an email and a password of at least 6 characters.'; return; }
+  if(!window.fvCreateAccount){ errEl.textContent='Still connecting to Firebase, try again in a moment.'; return; }
+  try{
+    await window.fvCreateAccount(email, password);
+    OWNER.email=email;
+    renderTab();
+  } catch(e){
+    errEl.textContent = 'Could not create login: ' + (e.message||'try a different email.');
+  }
 }
 function deleteStaff(personId){
   const idx=EMPLOYEES.findIndex(x=>x.id===personId);
@@ -1037,9 +1119,94 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
-  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule});
+  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule,
+  WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
 
 render();
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDPibb9xFpSukQY2HwSx4DuNo7UgX6YkQk",
+    authDomain: "fv-erm.firebaseapp.com",
+    projectId: "fv-erm",
+    storageBucket: "fv-erm.firebasestorage.app",
+    messagingSenderId: "254486145999",
+    appId: "1:254486145999:web:8bf567c3e4211cf0e0c0ba"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const stateRef = doc(db, "fotovision_erm", "state");
+
+  window.fvCreateAccount = async function(email, password){
+    // Creating a new account signs Firebase in as that new user, which would
+    // knock the currently signed-in Owner/Manager out mid-session. We work
+    // around that by spinning up a second, throwaway Firebase app instance
+    // just for account creation, so the main session is untouched.
+    const { initializeApp: initSecondary } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const secondaryApp = initSecondary(firebaseConfig, "secondary-" + Date.now());
+    const secondaryAuth = getAuth(secondaryApp);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    await signOut(secondaryAuth);
+    return cred;
+  };
+  window.fvSignIn = async function(email, password){
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+  window.fvSignOut = async function(){
+    try{ await signOut(auth); } catch(e){}
+  };
+
+  let saveTimer = null;
+  window.fvScheduleSave = function(){
+    if(!window.WEDDINGS) return; // app not ready yet
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        await setDoc(stateRef, {
+          weddingsJSON: JSON.stringify(window.WEDDINGS),
+          employeesJSON: JSON.stringify(window.EMPLOYEES),
+          ownerEmail: (window.OWNER && window.OWNER.email) || "",
+          updatedAt: new Date().toISOString()
+        });
+        console.log("Fotovision ERM: saved to Firestore");
+      } catch(e){
+        console.error("Fotovision ERM: save failed", e);
+      }
+    }, 800);
+  };
+
+  (async () => {
+    try {
+      const snap = await getDoc(stateRef);
+      if(snap.exists()){
+        const data = snap.data();
+        const weddings = JSON.parse(data.weddingsJSON || "[]");
+        const employees = JSON.parse(data.employeesJSON || "[]");
+        if(weddings.length){
+          window.WEDDINGS.length = 0;
+          window.WEDDINGS.push(...weddings);
+        }
+        if(employees.length){
+          window.EMPLOYEES.length = 0;
+          window.EMPLOYEES.push(...employees);
+        }
+        if(data.ownerEmail && window.OWNER) window.OWNER.email = data.ownerEmail;
+        console.log("Fotovision ERM: loaded saved data from Firestore");
+        if(window.render) window.render();
+      } else {
+        // first run — seed Firestore with the current sample data
+        window.fvScheduleSave();
+      }
+    } catch(e){
+      console.error("Fotovision ERM: load failed, using local sample data", e);
+    }
+  })();
 </script>
 </body>
 </html>
