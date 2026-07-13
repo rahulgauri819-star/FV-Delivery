@@ -130,6 +130,14 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .fev-row:first-of-type{border-top:none;margin-top:8px;}
 .fev-row select{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);}
 .fev-row input[type=text]{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);width:130px;}
+.ledger-row{display:flex;align-items:flex-start;gap:14px;padding:9px 4px;border-bottom:1px solid var(--line);}
+.ledger-date{width:100px;flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--muted);padding-top:4px;}
+.ledger-content{flex:1;font-size:13px;}
+.ledger-content.muted{color:var(--muted);padding-top:4px;}
+.ledger-row.holiday .ledger-content{color:var(--red);font-weight:600;padding-top:4px;}
+.ledger-row.holiday{background:var(--red-dim);border-radius:8px;}
+.ledger-task{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;}
+.ledger-task select{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--paper-dim);}
 </style>
 </head>
 <body>
@@ -175,7 +183,7 @@ const DATA_STATUS = ['pending','copied'];
 const WEDDING_TRACKS = [
   {key:'allPhotos', label:'All Photographs (watermarked, low-res)', platform:'Google Drive'},
   {key:'photoFrames', label:'Photo Frames', platform:''},
-  {key:'videoBook', label:'Video Book', platform:'', defaultAssignee:'e8'},
+  {key:'videoBook', label:'Video Book', platform:'', defaultAssignee:'e8', skill:'videoBook'},
   {key:'albumDesign', label:'Album Design', platform:''},
   {key:'albumUpload', label:'Album Upload', platform:'Google Drive'},
   {key:'printing', label:'Album Printing', platform:''},
@@ -184,10 +192,10 @@ const WEDDING_TRACKS = [
 ];
 // Video Editing sub-items (wedding-wide, single assignee each)
 const VIDEO_EDITING_SINGLE = [
-  {key:'teaser', label:'Teaser', platform:'Vimeo'},
-  {key:'instacut', label:'Insta-cut', platform:'Vimeo'},
-  {key:'story', label:'Wedding Story', platform:'Vimeo'},
-  {key:'reels', label:'Reels', platform:'Vimeo'},
+  {key:'teaser', label:'Teaser', platform:'Vimeo', skill:'teaser'},
+  {key:'instacut', label:'Insta-cut', platform:'Vimeo', skill:'instacut'},
+  {key:'story', label:'Wedding Story', platform:'Vimeo', skill:'story'},
+  {key:'reels', label:'Reels', platform:'Vimeo', skill:'reels'},
 ];
 
 function newTrackObj(defaultAssignee){
@@ -259,6 +267,18 @@ function next30DayOptions(selected){
   }
   return opts;
 }
+function eligiblePeopleFor(skillKey){
+  if(!skillKey) return ALL_PEOPLE;
+  return ALL_PEOPLE.filter(p=> p.type==='freelancer' || (p.skills||[]).includes(skillKey));
+}
+function isSunday(dateStr){ return dateStr && new Date(dateStr+'T00:00:00').getDay()===0; }
+function shiftDateSkippingSunday(dateStr, days){
+  if(!dateStr) return dateStr;
+  let d=new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  while(d.getDay()===0){ d.setDate(d.getDate()+1); }
+  return d.toISOString().slice(0,10);
+}
 function dateChip(d){ const dt=new Date(d+'T00:00:00'); return {day:dt.getDate(), mon:dt.toLocaleDateString('en-IN',{month:'short'})}; }
 
 // ---------- progress calc ----------
@@ -297,6 +317,7 @@ function render(){
     <nav class="tabs">
       ${isStaff ? tabBtn('mytasks','My Tasks') : ''}
       ${!isStaff ? tabBtn('dashboard','Dashboard') : ''}
+      ${(isOwner||isManager) ? tabBtn('assignwork','Assign Work') : ''}
       ${!isStaff ? tabBtn('weddings','Weddings') : ''}
       ${isOwner ? tabBtn('settings','Settings') : ''}
     </nav>
@@ -337,16 +358,17 @@ function handleFab(){
   else openWeddingModal();
 }
 function tabBtn(id,label){ return `<button class="${currentTab===id?'active':''}" onclick="setTab('${id}')">${label}</button>`; }
-function setTab(id){ currentTab=id; currentWeddingId=null; renderTab(); }
+function setTab(id){ currentTab=id; currentWeddingId=null; assignWorkStaffId=null; renderTab(); }
 function renderTab(){
   const el=document.getElementById('tabContent');
   if(currentTab==='dashboard') el.innerHTML=renderDashboard();
   else if(currentTab==='mytasks') el.innerHTML=renderMyTasks();
+  else if(currentTab==='assignwork') el.innerHTML=renderAssignWork();
   else if(currentTab==='settings') el.innerHTML=renderSettings();
   else el.innerHTML = currentWeddingId ? renderWeddingDetail(currentWeddingId) : renderWeddingsList();
 }
 
-// ---------- My Tasks (staff view) ----------
+// ---------- My Tasks / Assign Work (date ledger, shared between staff self-view and owner/manager staff-wise view) ----------
 function collectAssignedItems(personId){
   const items=[];
   WEDDINGS.forEach(w=>{
@@ -358,54 +380,91 @@ function collectAssignedItems(personId){
   });
   return items;
 }
-function renderMyTasks(){
-  const items=collectAssignedItems(currentUser.id).filter(i=>i.track.status!=='done');
-  const doneItems=collectAssignedItems(currentUser.id).filter(i=>i.track.status==='done');
-
-  const withDate = items.filter(i=>i.track.due).sort((a,b)=> a.track.due.localeCompare(b.track.due));
-  const noDate = items.filter(i=>!i.track.due);
-
-  const groups={};
-  withDate.forEach(i=>{ (groups[i.track.due] = groups[i.track.due]||[]).push(i); });
-  const dateKeys = Object.keys(groups).sort();
-
-  return `
-    <section class="block">
-      <h2>Assigned To Me — By Date</h2>
-      ${dateKeys.length ? dateKeys.map(dateKey=>{
-        const isToday = dateKey===new Date().toISOString().slice(0,10);
-        const isPast = new Date(dateKey) < new Date(new Date().toISOString().slice(0,10));
-        return `
-          <div class="track-group-title" style="margin-top:14px;${isPast?'color:var(--red);':isToday?'color:var(--amber);':''}">${fmtDate(dateKey)}${isToday?' — Today':isPast?' — Overdue':''}</div>
-          ${groups[dateKey].map(renderMyTaskRow).join('')}
-        `;
-      }).join('') : ''}
-      ${noDate.length ? `<div class="track-group-title" style="margin-top:14px;">No Due Date Set</div>${noDate.map(renderMyTaskRow).join('')}` : ''}
-      ${!items.length ? emptyState('Nothing assigned to you right now') : ''}
-    </section>
-    ${doneItems.length?`<section class="block"><h2>Completed</h2>${doneItems.map(renderMyTaskRow).join('')}</section>`:''}
-  `;
+function shiftFutureTasks(personId, afterDate, days){
+  collectAssignedItems(personId).forEach(item=>{
+    if(item.track.due && item.track.due > afterDate) item.track.due = shiftDateSkippingSunday(item.track.due, days);
+    if(item.track.start && item.track.start > afterDate) item.track.start = shiftDateSkippingSunday(item.track.start, days);
+  });
 }
-function renderMyTaskRow(item){
-  const delayed=isDelayed(item.track);
-  const statusCls = delayed ? 'delayed' : item.track.status;
-  const statusText = delayed ? 'Delayed' : STATUS_LABEL[item.track.status];
-  return `
-    <div class="track-row">
-      <span class="pill ${statusCls}">${statusText}</span>
-      <span class="tname">${item.label} <span class="tmeta">— ${item.w.client}</span></span>
-      <select onchange="updateMyTask('${item.w.id}','${item.label}',this.value)">
-        ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
-      </select>
-      ${item.track.start?`<span class="tmeta">start ${fmtDate(item.track.start)}</span>`:''}
-    </div>
-  `;
+function promptShiftSchedule(personId, weddingId, label){
+  const daysStr = prompt("How many days delayed? This shifts this person's other upcoming tasks forward by this many days (Sundays are skipped).", '1');
+  const days = parseInt(daysStr,10);
+  if(!days || days<1) return;
+  const items = collectAssignedItems(personId).filter(i=>i.w.id===weddingId && i.label===label);
+  if(!items.length) return;
+  const afterDate = items[0].track.due || new Date().toISOString().slice(0,10);
+  shiftFutureTasks(personId, afterDate, days);
+  renderTab();
 }
-function updateMyTask(weddingId, label, value){
-  const w=WEDDINGS.find(x=>x.id===weddingId);
-  const items=collectAssignedItems(currentUser.id).filter(i=>i.w.id===weddingId && i.label===label);
+function renderMyTasks(){ return renderScheduleFor(currentUser.id, currentUser.id); }
+function renderScheduleFor(personId, actingUserId){
+  const items=collectAssignedItems(personId);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const rangeStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
+  const rangeEnd=new Date(today.getFullYear(), today.getMonth()+2, 0);
+  let html=''; let lastMonth='';
+  for(let d=new Date(rangeStart); d<=rangeEnd; d.setDate(d.getDate()+1)){
+    const iso=d.toISOString().slice(0,10);
+    const monthLabel=d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    if(monthLabel!==lastMonth){ html+=`<div class="track-group-title" style="margin-top:18px;">${monthLabel}</div>`; lastMonth=monthLabel; }
+    const dayItems=items.filter(i=>i.track.due===iso);
+    const sunday=d.getDay()===0;
+    const isToday=iso===today.toISOString().slice(0,10);
+    const dateLabel=d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
+    if(sunday){
+      html+=`<div class="ledger-row holiday"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content">Sunday — Holiday</span></div>`;
+    } else if(!dayItems.length){
+      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content muted">No work assigned</span></div>`;
+    } else {
+      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content">`;
+      html+=dayItems.map(item=>{
+        const delayed=isDelayed(item.track);
+        const statusCls=delayed?'delayed':item.track.status;
+        const statusText=delayed?'Delayed':STATUS_LABEL[item.track.status];
+        return `<div class="ledger-task">
+          <span class="pill ${statusCls}">${statusText}</span>
+          <span class="tname">${item.label} <span class="tmeta">— ${item.w.client}</span></span>
+          <select onchange="updateMyTask('${personId}','${item.w.id}','${item.label}',this.value)">
+            ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+          </select>
+          ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${item.label}')">Shift Future Work</button>`:''}
+        </div>`;
+      }).join('');
+      html+=`</span></div>`;
+    }
+  }
+  return `<section class="block"><h2>${actingUserId?'My Schedule':'Schedule'}</h2>${html}</section>`;
+}
+function updateMyTask(personId, weddingId, label, value){
+  const items=collectAssignedItems(personId).filter(i=>i.w.id===weddingId && i.label===label);
   if(items.length) items[0].track.status=value;
   renderTab();
+}
+
+// ---------- Assign Work tab (owner/manager): staff-wise database ----------
+let assignWorkStaffId=null;
+function openAssignWorkStaff(id){ assignWorkStaffId=id; renderTab(); }
+function closeAssignWorkStaff(){ assignWorkStaffId=null; renderTab(); }
+function renderAssignWork(){
+  if(assignWorkStaffId){
+    const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId);
+    return `<span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
+      <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${p.name} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${p.title}</span></h2>
+      ${renderScheduleFor(p.id, null)}`;
+  }
+  return `
+    <section class="block">
+      <h2>Staff — Pick Someone to View / Assign Work <button class="btn-add" onclick="openStaffModal(null, true)">+ Add Staff</button></h2>
+      ${EMPLOYEES.map(p=>{
+        const count=collectAssignedItems(p.id).filter(i=>i.track.status!=='done').length;
+        return `
+        <div class="wedding-row" onclick="openAssignWorkStaff('${p.id}')">
+          <div class="info"><div class="client">${p.name}</div><div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div></div>
+          <span class="progress-mini">${count} active task${count===1?'':'s'}</span>
+        </div>`;
+      }).join('')}
+    </section>
+  `;
 }
 
 // ---------- Settings (owner only): staff directory ----------
@@ -433,7 +492,7 @@ function renderSettings(){
     </section>
   `;
 }
-function openStaffModal(personId){
+function openStaffModal(personId, jumpToWork){
   const p = personId ? EMPLOYEES.find(x=>x.id===personId) : null;
   document.getElementById('modalBody').innerHTML = `
     <h3>${p?'Edit Staff':'Add Staff'}</h3>
@@ -458,24 +517,27 @@ function openStaffModal(personId){
     <div class="modal-actions">
       ${p?`<button class="btn btn-ghost" style="color:var(--red);" onclick="deleteStaff('${p.id}')">Remove</button>`:''}
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveStaff('${personId||''}')">Save</button>
+      <button class="btn btn-primary" onclick="saveStaff('${personId||''}', ${jumpToWork?'true':'false'})">Save</button>
     </div>
   `;
   document.getElementById('overlay').classList.add('show');
 }
-function saveStaff(personId){
+function saveStaff(personId, jumpToWork){
   const name=document.getElementById('f_stName').value.trim();
   const title=document.getElementById('f_stTitle').value.trim();
   const accountRole=document.getElementById('f_stRole').value;
   const skills=[...document.querySelectorAll('.skillbox:checked')].map(c=>c.value);
   if(!name){ alert('Name is required'); return; }
+  let newId=personId;
   if(personId){
     const p=EMPLOYEES.find(x=>x.id===personId);
     p.name=name; p.title=title; p.accountRole=accountRole; p.skills=skills;
   } else {
-    EMPLOYEES.push({id:'e'+Math.random().toString(36).slice(2,9), name, title, type:'inhouse', accountRole, skills});
+    newId='e'+Math.random().toString(36).slice(2,9);
+    EMPLOYEES.push({id:newId, name, title, type:'inhouse', accountRole, skills});
   }
   closeModal();
+  if(jumpToWork){ assignWorkStaffId=newId; }
   renderTab();
 }
 function deleteStaff(personId){
@@ -625,7 +687,7 @@ function renderPhotoEditingRow(w, subKey, label, hasLink){
       </select>
       <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
         <option value="">Assign to...</option>
-        ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+        ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
       <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
         ${next30DayOptions(track.start)}
@@ -659,7 +721,7 @@ function renderTrackRow(weddingId, trackDef, track, ref){
       </select>
       <select onchange="updateTrack('${weddingId}','${refStr}','assignee',this.value)">
         <option value="">Assign to...</option>
-        ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+        ${eligiblePeopleFor(trackDef.skill).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
       <select onchange="updateTrack('${weddingId}','${refStr}','start',this.value)" title="Start Date">
         ${next30DayOptions(track.start)}
@@ -693,10 +755,15 @@ function renderFullVideoBox(w){
             </select>
             <select onchange="updateTrack('${w.id}','${ref}','assignee',this.value)">
               <option value="">Assign to...</option>
-              ${ALL_PEOPLE.map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+              ${eligiblePeopleFor('fullVideo').map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
             </select>
             <select onchange="updateTrack('${w.id}','${ref}','start',this.value)" title="Start Date">${next30DayOptions(track.start)}</select>
             <select onchange="updateTrack('${w.id}','${ref}','due',this.value)" title="Due Date">${next30DayOptions(track.due)}</select>
+            <select onchange="updateTrack('${w.id}','${ref}','renderStatus',this.value)" title="Render Status">
+              <option value="">Render status...</option>
+              <option value="rendering" ${track.renderStatus==='rendering'?'selected':''}>In Rendering</option>
+              <option value="rendered" ${track.renderStatus==='rendered'?'selected':''}>Video Rendered</option>
+            </select>
             <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${w.id}','${ref}','link',this.value)">
           </div>
         `;
@@ -969,7 +1036,8 @@ document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
-  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson});
+  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
+  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule});
 
 render();
 </script>
