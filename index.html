@@ -843,6 +843,7 @@ function saveEvent(weddingId, eventId){
   if(eventId){
     const ev=w.events.find(e=>e.id===eventId);
     ev.name=name; ev.date=date; ev.venue=venue; ev.still=still; ev.cine=cine;
+    syncDmWithTeam(w, ev);
   } else {
     const newEvId=genEventId();
     w.events.push({id:newEvId, name, date, venue, still, cine});
@@ -851,6 +852,14 @@ function saveEvent(weddingId, eventId){
   }
   closeModal();
   renderTab();
+}
+// Keep Data Management in sync when the team is edited later — adds newly-checked people
+// without touching status/size already recorded for people still on the team.
+function syncDmWithTeam(w, ev){
+  ensureDmInit(w, ev);
+  const dm=w.dataManagement.events[ev.id];
+  ev.still.forEach(pid=>{ if(!dm.still.some(e=>e.pid===pid)) dm.still.push({pid, status:'pending', dataSize:''}); });
+  ev.cine.forEach(pid=>{ if(!dm.video.some(e=>e.pid===pid)) dm.video.push({pid, status:'pending', dataSize:''}); });
 }
 function deleteEvent(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
