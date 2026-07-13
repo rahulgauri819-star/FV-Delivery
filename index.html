@@ -518,12 +518,7 @@ function renderWeddingDetail(id){
     </div>
 
     <section class="block">
-      <h2>Events & Team Assignment <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
-      ${w.events.map(ev=>renderEventCard(w.id,ev)).join('') || emptyState('No events added yet')}
-    </section>
-
-    <section class="block">
-      <h2>Data Management</h2>
+      <h2>Data Management <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
       ${renderDataManagement(w)}
     </section>
 
@@ -670,7 +665,10 @@ function renderDataManagement(w){
       ensureDmInit(w, ev);
       return `
         <div class="dm-event-card">
-          <div class="track-group-title" style="margin-bottom:10px;">${fmtDate(ev.date)} — ${ev.name}</div>
+          <div class="track-group-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+            <span>${fmtDate(ev.date)} — ${ev.name} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${ev.venue||'venue TBD'}</span></span>
+            <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;" onclick="openEventModal('${w.id}','${ev.id}')">Edit</span>
+          </div>
           ${renderDmFlexRow(w, ev, 'still', '📷', 'Still')}
           ${renderDmFlexRow(w, ev, 'video', '🎬', 'Video')}
         </div>
