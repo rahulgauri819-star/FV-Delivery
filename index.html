@@ -359,15 +359,31 @@ function collectAssignedItems(personId){
   return items;
 }
 function renderMyTasks(){
-  const items=collectAssignedItems(currentUser.id);
-  const pending=items.filter(i=>i.track.status!=='done');
-  const done=items.filter(i=>i.track.status==='done');
+  const items=collectAssignedItems(currentUser.id).filter(i=>i.track.status!=='done');
+  const doneItems=collectAssignedItems(currentUser.id).filter(i=>i.track.status==='done');
+
+  const withDate = items.filter(i=>i.track.due).sort((a,b)=> a.track.due.localeCompare(b.track.due));
+  const noDate = items.filter(i=>!i.track.due);
+
+  const groups={};
+  withDate.forEach(i=>{ (groups[i.track.due] = groups[i.track.due]||[]).push(i); });
+  const dateKeys = Object.keys(groups).sort();
+
   return `
     <section class="block">
-      <h2>Assigned To Me</h2>
-      ${pending.map(renderMyTaskRow).join('') || emptyState('Nothing assigned to you right now')}
+      <h2>Assigned To Me — By Date</h2>
+      ${dateKeys.length ? dateKeys.map(dateKey=>{
+        const isToday = dateKey===new Date().toISOString().slice(0,10);
+        const isPast = new Date(dateKey) < new Date(new Date().toISOString().slice(0,10));
+        return `
+          <div class="track-group-title" style="margin-top:14px;${isPast?'color:var(--red);':isToday?'color:var(--amber);':''}">${fmtDate(dateKey)}${isToday?' — Today':isPast?' — Overdue':''}</div>
+          ${groups[dateKey].map(renderMyTaskRow).join('')}
+        `;
+      }).join('') : ''}
+      ${noDate.length ? `<div class="track-group-title" style="margin-top:14px;">No Due Date Set</div>${noDate.map(renderMyTaskRow).join('')}` : ''}
+      ${!items.length ? emptyState('Nothing assigned to you right now') : ''}
     </section>
-    ${done.length?`<section class="block"><h2>Completed</h2>${done.map(renderMyTaskRow).join('')}</section>`:''}
+    ${doneItems.length?`<section class="block"><h2>Completed</h2>${doneItems.map(renderMyTaskRow).join('')}</section>`:''}
   `;
 }
 function renderMyTaskRow(item){
@@ -381,7 +397,7 @@ function renderMyTaskRow(item){
       <select onchange="updateMyTask('${item.w.id}','${item.label}',this.value)">
         ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
       </select>
-      ${item.track.due?`<span class="tmeta">due ${fmtDate(item.track.due)}</span>`:''}
+      ${item.track.start?`<span class="tmeta">start ${fmtDate(item.track.start)}</span>`:''}
     </div>
   `;
 }
