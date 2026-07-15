@@ -144,6 +144,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-add{color:var(--amber);font-weight:700;font-size:10.5px;cursor:pointer;white-space:nowrap;}
 .ledger-inline-assign{display:inline-flex;align-items:center;gap:4px;}
 .ledger-mini-select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);max-width:120px;}
+.ledger-mini-input{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);width:70px;}
 </style>
 </head>
 <body>
@@ -152,7 +153,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -422,6 +423,7 @@ function renderScheduleFor(personId, actingUserId){
           <select onchange="updateMyTask('${personId}','${item.w.id}','${item.label}',this.value)">
             ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
           </select>
+          ${item.track.notes?`<span class="tmeta" title="${item.track.notes}">📝 ${item.track.notes}</span>`:''}
           ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${item.label}')">Shift Future Work</button>`:''}
         </span>`;
       }).join('');
@@ -440,6 +442,13 @@ function renderScheduleFor(personId, actingUserId){
             ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
           </select>
           <select id="ev_${iso}" class="ledger-mini-select" style="display:none;" onchange="dmInlineHandle('${personId}','${iso}')"></select>
+          <select id="status_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
+            ${STATUS.map(s=>`<option value="${s}">${STATUS_LABEL[s]}</option>`).join('')}
+          </select>
+          <select id="start_${iso}" class="ledger-mini-select" title="Start Date" onchange="dmInlineHandle('${personId}','${iso}')">${next30DayOptions('')}</select>
+          <select id="due_${iso}" class="ledger-mini-select" title="Due Date" onchange="dmInlineHandle('${personId}','${iso}')">${next30DayOptions(iso)}</select>
+          <input id="link_${iso}" class="ledger-mini-input" placeholder="link" onchange="dmInlineHandle('${personId}','${iso}')">
+          <input id="notes_${iso}" class="ledger-mini-input" placeholder="notes" onchange="dmInlineHandle('${personId}','${iso}')">
         </span>
       `;
     }
@@ -451,6 +460,11 @@ function dmInlineHandle(personId, dateIso){
   const cliEl=document.getElementById('cli_'+dateIso);
   const dutyEl=document.getElementById('duty_'+dateIso);
   const evEl=document.getElementById('ev_'+dateIso);
+  const statusEl=document.getElementById('status_'+dateIso);
+  const startEl=document.getElementById('start_'+dateIso);
+  const dueEl=document.getElementById('due_'+dateIso);
+  const linkEl=document.getElementById('link_'+dateIso);
+  const notesEl=document.getElementById('notes_'+dateIso);
   if(!cliEl||!dutyEl) return;
   const cli=cliEl.value;
   const duty=dutyEl.value;
@@ -468,7 +482,12 @@ function dmInlineHandle(personId, dateIso){
     eventId=evEl.value;
     if(!eventId) return; // wait until an event is picked too
   }
-  assignTrackForPerson(cli, duty, eventId, personId, '', dateIso, '');
+  const status=statusEl?statusEl.value:'';
+  const start=startEl?startEl.value:'';
+  const due=dueEl?dueEl.value:dateIso;
+  const link=linkEl?linkEl.value.trim():'';
+  const notes=notesEl?notesEl.value.trim():'';
+  assignTrackForPerson(cli, duty, eventId, personId, start, due||dateIso, link, status, notes);
   renderTab();
 }
 function updateMyTask(personId, weddingId, label, value){
@@ -566,7 +585,7 @@ function toggleAwEventField(){
     wrap.style.display='none';
   }
 }
-function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, due, link){
+function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, due, link, status, notes){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   let t=null;
   if(dutyValue==='photoEditing:lightroom' || dutyValue==='photoEditing:photoshop'){
@@ -583,6 +602,8 @@ function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, du
   if(start) t.start=start;
   if(due) t.due=due;
   if(link) t.link=link;
+  if(status) t.status=status;
+  if(notes) t.notes=notes;
   return true;
 }
 function submitAssignWork(personId){
@@ -897,28 +918,27 @@ function toggleEventCard(eventId){
 // ---------- Photo Editing (Lightroom -> Photoshop, sequential) ----------
 function renderPhotoEditingRow(w, subKey, label, hasLink){
   const track = w.photoEditing[subKey];
-  const locked = subKey==='photoshop' && w.photoEditing.lightroom.status!=='done';
   const delayed = isDelayed(track);
   const statusCls = delayed ? 'delayed' : track.status;
   const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
   return `
-    <div class="track-row" style="${locked?'opacity:.5;':''}">
+    <div class="track-row">
       <span class="pill ${statusCls}">${statusText}</span>
-      <span class="tname">${label}${hasLink?' <span class="tmeta">(FotoOwl)</span>':''}${locked?' <span class="tmeta">— waiting on Lightroom</span>':''}</span>
-      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','status',this.value)">
+      <span class="tname">${label}${hasLink?' <span class="tmeta">(FotoOwl)</span>':''}</span>
+      <select onchange="updatePhotoEditing('${w.id}','${subKey}','status',this.value)">
         ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
       </select>
-      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
+      <select onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
         <option value="">Assign to...</option>
         ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
-      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
+      <select onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
         ${next30DayOptions(track.start)}
       </select>
-      <select ${locked?'disabled':''} onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)" title="Due Date">
+      <select onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)" title="Due Date">
         ${next30DayOptions(track.due)}
       </select>
-      ${hasLink?`<input type="text" ${locked?'disabled':''} placeholder="paste FotoOwl link" value="${track.link||''}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
+      ${hasLink?`<input type="text" placeholder="paste FotoOwl link" value="${track.link||''}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
       ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
     </div>
   `;
