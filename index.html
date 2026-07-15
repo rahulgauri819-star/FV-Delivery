@@ -141,6 +141,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-task .tname{font-size:11.5px;}
 .ledger-task select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);}
 .ledger-task .btn-sm{padding:2px 7px;font-size:10px;}
+.ledger-add{color:var(--amber);font-weight:700;font-size:10.5px;cursor:pointer;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -149,7 +150,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v23';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -403,7 +404,7 @@ function renderScheduleFor(personId, actingUserId){
     if(sunday){
       html+=`<div class="ledger-row holiday"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content">Sunday — Holiday</span></div>`;
     } else if(!dayItems.length){
-      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content muted">No work assigned</span></div>`;
+      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content muted">No work assigned${!actingUserId?` <span class="ledger-add" onclick="openAssignForDate('${personId}','${iso}')">+ Assign</span>`:''}</span></div>`;
     } else {
       html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">`;
       html+=dayItems.map(item=>{
@@ -419,6 +420,7 @@ function renderScheduleFor(personId, actingUserId){
           ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${item.label}')">Shift Future Work</button>`:''}
         </span>`;
       }).join('');
+      if(!actingUserId) html+=`<span class="ledger-add" onclick="openAssignForDate('${personId}','${iso}')">+ Assign</span>`;
       html+=`</span></div>`;
     }
   }
@@ -551,6 +553,67 @@ function submitAssignWork(personId){
   if(!duty||!weddingId){ errEl.textContent='Pick a duty and a client.'; return; }
   if(duty==='fullVideo' && !eventId){ errEl.textContent='Pick which event this Full Video is for.'; return; }
   assignTrackForPerson(weddingId, duty, eventId, personId, start, due, link);
+  renderTab();
+}
+
+// ---------- Assign work directly from a specific date row in the schedule ----------
+function openAssignForDate(personId, dateIso){
+  const person=EMPLOYEES.find(x=>x.id===personId);
+  const duties=awDutyOptions(person);
+  document.getElementById('modalBody').innerHTML = `
+    <h3>Assign Work — ${fmtDate(dateIso)}</h3>
+    <div class="field"><label>Client (Wedding)</label>
+      <select id="f_dmAwWedding" onchange="toggleDmAwEventField()">
+        <option value="">Select client...</option>
+        ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Duty</label>
+      <select id="f_dmAwDuty" onchange="toggleDmAwEventField()">
+        <option value="">Select duty...</option>
+        ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
+      </select>
+      ${!duties.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">No skills tagged for this person yet — add some in Settings to see duty options here.</div>` : ''}
+    </div>
+    <div class="field" id="f_dmAwEventWrap" style="display:none;">
+      <label>Event</label>
+      <select id="f_dmAwEvent"></select>
+    </div>
+    <div class="field"><label>Link (optional)</label><input id="f_dmAwLink" placeholder="paste link"></div>
+    <div id="f_dmAwError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAssignForDate('${personId}','${dateIso}')">Assign</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function toggleDmAwEventField(){
+  const dutyEl=document.getElementById('f_dmAwDuty');
+  const weddingEl=document.getElementById('f_dmAwWedding');
+  if(!dutyEl||!weddingEl) return;
+  const duty=dutyEl.value;
+  const weddingId=weddingEl.value;
+  const wrap=document.getElementById('f_dmAwEventWrap');
+  if(duty==='fullVideo' && weddingId){
+    const w=WEDDINGS.find(x=>x.id===weddingId);
+    document.getElementById('f_dmAwEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    wrap.style.display='block';
+  } else {
+    wrap.style.display='none';
+  }
+}
+function submitAssignForDate(personId, dateIso){
+  const duty=document.getElementById('f_dmAwDuty').value;
+  const weddingId=document.getElementById('f_dmAwWedding').value;
+  const eventEl=document.getElementById('f_dmAwEvent');
+  const eventId=eventEl?eventEl.value:'';
+  const link=document.getElementById('f_dmAwLink').value.trim();
+  const errEl=document.getElementById('f_dmAwError');
+  if(!duty||!weddingId){ errEl.textContent='Pick a duty and a client.'; return; }
+  if(duty==='fullVideo' && !eventId){ errEl.textContent='Pick which event this Full Video is for.'; return; }
+  assignTrackForPerson(weddingId, duty, eventId, personId, '', dateIso, link);
+  closeModal();
   renderTab();
 }
 
@@ -1155,6 +1218,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule,
   toggleAwEventField, submitAssignWork,
+  openAssignForDate, toggleDmAwEventField, submitAssignForDate,
   WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
 
 render();
