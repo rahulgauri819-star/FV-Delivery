@@ -142,6 +142,8 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-task select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);}
 .ledger-task .btn-sm{padding:2px 7px;font-size:10px;}
 .ledger-add{color:var(--amber);font-weight:700;font-size:10.5px;cursor:pointer;white-space:nowrap;}
+.ledger-inline-assign{display:inline-flex;align-items:center;gap:4px;}
+.ledger-mini-select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);max-width:120px;}
 </style>
 </head>
 <body>
@@ -150,7 +152,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v23';
+const APP_VERSION = 'v24';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -389,6 +391,9 @@ function promptShiftSchedule(personId, weddingId, label){
 function renderMyTasks(){ return renderScheduleFor(currentUser.id, currentUser.id); }
 function renderScheduleFor(personId, actingUserId){
   const items=collectAssignedItems(personId);
+  const person=EMPLOYEES.find(x=>x.id===personId);
+  const duties=awDutyOptions(person);
+  const canAssignInline = !actingUserId;
   const today=new Date(); today.setHours(0,0,0,0);
   const rangeStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
   const rangeEnd=new Date(today.getFullYear(), today.getMonth()+2, 0);
@@ -403,11 +408,11 @@ function renderScheduleFor(personId, actingUserId){
     const dateLabel=d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
     if(sunday){
       html+=`<div class="ledger-row holiday"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content">Sunday — Holiday</span></div>`;
-    } else if(!dayItems.length){
-      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content muted">No work assigned${!actingUserId?` <span class="ledger-add" onclick="openAssignForDate('${personId}','${iso}')">+ Assign</span>`:''}</span></div>`;
-    } else {
-      html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">`;
-      html+=dayItems.map(item=>{
+      continue;
+    }
+    let content='';
+    if(dayItems.length){
+      content += dayItems.map(item=>{
         const delayed=isDelayed(item.track);
         const statusCls=delayed?'delayed':item.track.status;
         const statusText=delayed?'Delayed':STATUS_LABEL[item.track.status];
@@ -420,11 +425,51 @@ function renderScheduleFor(personId, actingUserId){
           ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${item.label}')">Shift Future Work</button>`:''}
         </span>`;
       }).join('');
-      if(!actingUserId) html+=`<span class="ledger-add" onclick="openAssignForDate('${personId}','${iso}')">+ Assign</span>`;
-      html+=`</span></div>`;
+    } else if(!canAssignInline){
+      content += `<span class="muted">No work assigned</span>`;
     }
+    if(canAssignInline){
+      content += `
+        <span class="ledger-inline-assign">
+          <select id="cli_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
+            <option value="">Client...</option>
+            ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+          </select>
+          <select id="duty_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
+            <option value="">Duty...</option>
+            ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
+          </select>
+          <select id="ev_${iso}" class="ledger-mini-select" style="display:none;" onchange="dmInlineHandle('${personId}','${iso}')"></select>
+        </span>
+      `;
+    }
+    html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">${content}</span></div>`;
   }
   return `<section class="block"><h2>${actingUserId?'My Schedule':'Schedule'}</h2>${html}</section>`;
+}
+function dmInlineHandle(personId, dateIso){
+  const cliEl=document.getElementById('cli_'+dateIso);
+  const dutyEl=document.getElementById('duty_'+dateIso);
+  const evEl=document.getElementById('ev_'+dateIso);
+  if(!cliEl||!dutyEl) return;
+  const cli=cliEl.value;
+  const duty=dutyEl.value;
+  // show/populate event picker only when Full Event Video is the chosen duty
+  if(duty==='fullVideo' && cli){
+    const w=WEDDINGS.find(x=>x.id===cli);
+    evEl.innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    evEl.style.display='inline-block';
+  } else {
+    evEl.style.display='none';
+  }
+  if(!cli || !duty) return;
+  let eventId='';
+  if(duty==='fullVideo'){
+    eventId=evEl.value;
+    if(!eventId) return; // wait until an event is picked too
+  }
+  assignTrackForPerson(cli, duty, eventId, personId, '', dateIso, '');
+  renderTab();
 }
 function updateMyTask(personId, weddingId, label, value){
   const items=collectAssignedItems(personId).filter(i=>i.w.id===weddingId && i.label===label);
@@ -441,7 +486,6 @@ function renderAssignWork(){
     const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId);
     return `<span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
       <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${p.name} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${p.title}</span></h2>
-      ${renderAssignNewWorkForm(p.id)}
       ${renderScheduleFor(p.id, null)}`;
   }
   return `
@@ -1217,8 +1261,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule,
-  toggleAwEventField, submitAssignWork,
-  openAssignForDate, toggleDmAwEventField, submitAssignForDate,
+  dmInlineHandle,
   WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
 
 render();
