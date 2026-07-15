@@ -146,7 +146,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -290,7 +290,7 @@ function render(){
       ${isOwner ? tabBtn('settings','Settings') : ''}
     </nav>
     <div id="tabContent"></div>
-    ${!isStaff ? `<button class="fab" id="fabBtn" onclick="handleFab()">+</button>` : ''}
+    ${(!isStaff && currentTab!=='assignwork') ? `<button class="fab" id="fabBtn" onclick="handleFab()">+</button>` : ''}
   `;
   renderTab();
 }
@@ -436,6 +436,7 @@ function renderAssignWork(){
     const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId);
     return `<span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
       <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${p.name} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${p.title}</span></h2>
+      ${renderAssignNewWorkForm(p.id)}
       ${renderScheduleFor(p.id, null)}`;
   }
   return `
@@ -451,6 +452,98 @@ function renderAssignWork(){
       }).join('')}
     </section>
   `;
+}
+
+// ---------- Inline "Assign New Work" form on a staff member's page ----------
+function awDutyOptions(){
+  return [
+    {value:'photoEditing:lightroom', label:'Lightroom — Photo Editing'},
+    {value:'photoEditing:photoshop', label:'Photoshop — Photo Editing'},
+    ...VIDEO_EDITING_SINGLE.map(t=>({value:'videoEditingSingle:'+t.key, label:t.label+' — Video Editing'})),
+    {value:'fullVideo', label:'Full Event Video (pick event below)'},
+    ...WEDDING_TRACKS.map(t=>({value:'wedding:'+t.key, label:t.label}))
+  ];
+}
+function renderAssignNewWorkForm(personId){
+  if(!WEDDINGS.length) return `<div class="card" style="margin-bottom:20px;">${emptyState('Create a wedding first under the Weddings tab, then come back here to assign work.')}</div>`;
+  return `
+    <div class="card" style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Assign New Work</div>
+      <div class="row2">
+        <div class="field"><label>Duty</label>
+          <select id="f_awDuty" onchange="toggleAwEventField()">
+            <option value="">Select duty...</option>
+            ${awDutyOptions().map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Client (Wedding)</label>
+          <select id="f_awWedding" onchange="toggleAwEventField()">
+            <option value="">Select client...</option>
+            ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field" id="f_awEventWrap" style="display:none;">
+        <label>Event</label>
+        <select id="f_awEvent"></select>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Start Date</label><select id="f_awStart">${next30DayOptions('')}</select></div>
+        <div class="field"><label>Due Date</label><select id="f_awDue">${next30DayOptions('')}</select></div>
+      </div>
+      <div class="field"><label>Link (optional)</label><input id="f_awLink" placeholder="paste link"></div>
+      <div id="f_awError" style="color:var(--red);font-size:12.5px;margin-bottom:6px;"></div>
+      <button class="btn btn-primary" onclick="submitAssignWork('${personId}')">Assign to this person</button>
+    </div>
+  `;
+}
+function toggleAwEventField(){
+  const dutyEl=document.getElementById('f_awDuty');
+  const weddingEl=document.getElementById('f_awWedding');
+  if(!dutyEl||!weddingEl) return;
+  const duty=dutyEl.value;
+  const weddingId=weddingEl.value;
+  const wrap=document.getElementById('f_awEventWrap');
+  if(duty==='fullVideo' && weddingId){
+    const w=WEDDINGS.find(x=>x.id===weddingId);
+    document.getElementById('f_awEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    wrap.style.display='block';
+  } else {
+    wrap.style.display='none';
+  }
+}
+function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, due, link){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  let t=null;
+  if(dutyValue==='photoEditing:lightroom' || dutyValue==='photoEditing:photoshop'){
+    t=w.photoEditing[dutyValue.split(':')[1]];
+  } else if(dutyValue==='fullVideo'){
+    t=w.videoEditing.fullVideo[eventId];
+  } else if(dutyValue.startsWith('videoEditingSingle:')){
+    t=w.videoEditing[dutyValue.split(':')[1]];
+  } else if(dutyValue.startsWith('wedding:')){
+    t=w.tracks[dutyValue.split(':')[1]];
+  }
+  if(!t) return false;
+  t.assignee=personId;
+  if(start) t.start=start;
+  if(due) t.due=due;
+  if(link) t.link=link;
+  return true;
+}
+function submitAssignWork(personId){
+  const duty=document.getElementById('f_awDuty').value;
+  const weddingId=document.getElementById('f_awWedding').value;
+  const eventEl=document.getElementById('f_awEvent');
+  const eventId=eventEl?eventEl.value:'';
+  const start=document.getElementById('f_awStart').value;
+  const due=document.getElementById('f_awDue').value;
+  const link=document.getElementById('f_awLink').value.trim();
+  const errEl=document.getElementById('f_awError');
+  if(!duty||!weddingId){ errEl.textContent='Pick a duty and a client.'; return; }
+  if(duty==='fullVideo' && !eventId){ errEl.textContent='Pick which event this Full Video is for.'; return; }
+  assignTrackForPerson(weddingId, duty, eventId, personId, start, due, link);
+  renderTab();
 }
 
 // ---------- Settings (owner only): staff directory ----------
@@ -1053,6 +1146,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule,
+  toggleAwEventField, submitAssignWork,
   WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
 
 render();
