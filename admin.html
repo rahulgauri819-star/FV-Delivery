@@ -183,7 +183,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 .btn-success:hover{opacity:.9;}
 .btn-danger{background:var(--danger-light);color:var(--danger);}
 .btn-danger:hover{opacity:.85;}
-.btn-outline{background:var(--surface);color:var(--text);border-color:var(--border);}
+.btn-outline{background:#fff;color:var(--text);border-color:var(--border);}
 .btn-outline:hover{background:var(--surface2);}
 .btn-ghost{color:var(--text-muted);}
 .btn-ghost:hover{background:var(--surface2);color:var(--text);}
@@ -195,7 +195,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-label{font-size:13px;font-weight:600;color:var(--text);}
 .form-label .req{color:var(--danger);}
-.form-input,.form-select,.form-textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);font-size:14px;width:100%;transition:.15s;}
+.form-input,.form-select,.form-textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-size:14px;width:100%;transition:.15s;}
 .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,110,253,.12);}
 .form-textarea{resize:vertical;min-height:72px;}
 .form-hint{font-size:12px;color:var(--text-muted);}
@@ -232,13 +232,13 @@ body.staff-mode .staff-tab-bar{display:flex;}
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0;opacity:0;pointer-events:none;transition:.2s;}
 .modal-bg.open{opacity:1;pointer-events:all;}
-.modal{background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;transform:translateY(40px);transition:.2s;}
+.modal{background:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;transform:translateY(40px);transition:.2s;}
 .modal-bg.open .modal{transform:translateY(0);}
 @media(min-width:600px){
   .modal-bg{align-items:center;padding:16px;}
   .modal{border-radius:var(--radius-lg);max-height:92dvh;}
 }
-.modal-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
 .modal-title{font-size:15px;font-weight:700;}
 .modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--divider);display:flex;justify-content:flex-end;gap:10px;}
@@ -275,7 +275,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 
 /* COMPANY CARDS */
 .company-cards-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
-.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;cursor:pointer;transition:.15s;text-align:center;background:var(--surface);}
+.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;cursor:pointer;transition:.15s;text-align:center;background:#fff;}
 .company-card:hover{border-color:var(--primary);background:var(--primary-light);}
 .company-card.selected-grover{border-color:#0d6efd;background:var(--primary-light);}
 .company-card.selected-wedding{border-color:var(--wedding-color);background:var(--wedding-light);}
@@ -305,7 +305,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 /* TOAST */
 .toast-wrap{position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none;}
 body:not(.staff-mode) .toast-wrap{bottom:20px;}
-.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:300px;pointer-events:auto;animation:toastIn .2s ease;}
+.toast{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:300px;pointer-events:auto;animation:toastIn .2s ease;}
 .toast svg{width:15px;height:15px;flex-shrink:0;}
 .toast-ok{border-left:3px solid var(--success);}
 .toast-err{border-left:3px solid var(--danger);}
@@ -481,12 +481,11 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .daily-chart-wrap::-webkit-scrollbar{height:3px;}
 .daily-chart{display:flex;align-items:flex-end;gap:2px;height:160px;min-width:max-content;padding:0 4px;}
 .daily-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:0;min-width:28px;cursor:pointer;flex-shrink:0;padding:0 3px;}
-.daily-bar{width:20px;transition:.2s;position:relative;border-radius:6px 6px 0 0;}
+.daily-bar{width:13px;transition:.2s;position:relative;}
 .daily-bar.normal{background:#A8D5F5;}
-.daily-bar.dinner{background:#FFB347;border-radius:6px 6px 0 0;}
-.daily-bar-empty{width:20px;height:2px;background:var(--surface2);border-radius:2px;}
+.daily-bar.dinner{background:#f5a623;border-radius:4px 4px 0 0;}
+.daily-bar-empty{width:13px;height:3px;background:var(--surface2);border-radius:2px;margin-bottom:0;}
 .daily-bar-label{font-size:9px;color:var(--text-faint);text-align:center;margin-top:5px;line-height:1;}
-.daily-chart-baseline{height:1.5px;background:var(--border);width:100%;margin:0;}
 .daily-chart-baseline{height:1px;background:var(--border);width:100%;margin-bottom:0;}
 .chart-tooltip{font-size:12px;background:#1a1a2e;color:#fff;border-radius:var(--radius-sm);padding:6px 10px;margin-top:8px;display:none;}
 .chart-tooltip.show{display:block;}
@@ -517,51 +516,30 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
 </div>
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#eef4ff 0%,#f8f9fa 60%,#fce4ec 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-  <div style="width:100%;max-width:400px;">
+<!-- ADMIN LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:100%;max-width:380px;">
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(13,110,253,.25);">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
-      </div>
-      <div style="width:60px;height:60px;background:var(--primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--text);">Fotovision</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Attendance Management System</div>
+      <div style="width:60px;height:60px;background:#0d6efd;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 20px rgba(13,110,253,.4);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
+      <div style="font-size:22px;font-weight:800;color:#fff;">Fotovision Admin</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px;">Administration Panel</div>
     </div>
-    <div class="card">
-      <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
-        <div>
-          <div style="font-size:16px;font-weight:700;">Staff Sign In</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Enter your phone number and password</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone Number <span class="req" style="color:var(--danger)">*</span></label>
-          <div style="position:relative;">
-            <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <input class="form-input" id="loginPhone" type="text" inputmode="text" placeholder="Phone number or first name" autocomplete="username" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password <span class="req" style="color:var(--danger)">*</span></label>
-          <div style="position:relative;">
-            <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input class="form-input" id="loginPassword" type="text" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
-          </div>
-          <div class="form-hint">Default password: <strong>123</strong></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:4px;">
-          <input type="checkbox" id="rememberMe" style="position:absolute;opacity:0;width:0;height:0;" onchange="var box=document.getElementById('rememberMeBox');box.style.background=this.checked?'var(--primary)':'transparent';box.style.borderColor=this.checked?'var(--primary)':'#555';box.innerHTML=this.checked?'<svg width=11 height=11 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#fff\' stroke-width=\'3\'><polyline points=\'20 6 9 17 4 12\'/></svg>':'';this.nextElementSibling.nextElementSibling.style.fontWeight=this.checked?'700':'400';">
-          <div id="rememberMeBox" onclick="var cb=document.getElementById('rememberMe');cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));" style="width:18px;height:18px;border:2px solid #555;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;background:transparent;"></div>
-          <label for="rememberMe" style="font-size:13px;color:var(--text-muted);cursor:pointer;">Remember me on this device</label>
-        </div>
-        <div id="loginError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
-        <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitLogin()" style="justify-content:center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Sign In
-        </button>
+    <div style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+      <div><div style="font-size:16px;font-weight:700;">Admin Sign In</div></div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Admin Password</label>
+        <input style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:15px;box-sizing:border-box;" id="adminPanelPassword" type="password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer;" onclick="var cb=document.getElementById('adminRememberMe');cb.checked=!cb.checked;var box=document.getElementById('adminRememberMeBox');box.style.background=cb.checked?'#0d6efd':'transparent';box.style.borderColor=cb.checked?'#0d6efd':'#ccc';box.innerHTML=cb.checked?'<svg width=11 height=11 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#fff\' stroke-width=\'3\'><polyline points=\'20 6 9 17 4 12\'/></svg>':'';">
+        <input type="checkbox" id="adminRememberMe" style="position:absolute;opacity:0;width:0;height:0;">
+        <div id="adminRememberMeBox" style="width:18px;height:18px;border:2px solid #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;background:transparent;"></div>
+        <span style="font-size:13px;color:rgba(0,0,0,.6);">Remember me on this device</span>
+      </div>
+      <div id="adminPanelError" style="display:none;background:#fff0f0;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:500;"></div>
+      <button style="background:#0d6efd;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;" onclick="submitAdminPanel()">Sign In as Admin</button>
     </div>
-  </div></div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
@@ -601,6 +579,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <button onclick="toggleDarkMode()" id="darkModeBtn" class="btn btn-ghost btn-sm" style="padding:6px;margin-right:4px;" title="Toggle dark mode">
         <svg id="darkIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
+      <button id="notifBtn" onclick="initPushNotifications()" title="Enable Push Notifications" style="display:none;background:none;border:1px solid #333;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:16px;">🔔</button>
       <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:var(--text);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
@@ -629,19 +608,9 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <button class="btn btn-outline" onclick="hideCheckinSuccess()" style="margin-top:8px;">Done</button>
         </div>
       </div>
-<!-- Full-screen Firebase-confirmed success popup -->
-<div id="fvSuccessOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
-  <div style="background:#fff;border-radius:20px;padding:40px 48px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;gap:12px;max-width:320px;width:90%;">
-    <div style="width:72px;height:72px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-    </div>
-    <div id="fvSuccessTitle" style="font-size:22px;font-weight:800;color:#065f46;"></div>
-    <div id="fvSuccessMsg" style="font-size:14px;color:#6b7280;"></div>
-  </div>
-</div>
       <div id="staffPortalHistory" class="staff-tab-content" style="display:none;">
         <div style="font-size:20px;font-weight:800;margin-bottom:4px;">My Attendance</div>
-        <select id="portalMonthSelect" onchange="onPortalMonthChange()" style="font-size:13px;color:var(--text);margin-bottom:20px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);width:100%;max-width:220px;"></select>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;" id="portalMonthLabel"></div>
         <div class="card"><div id="portalLogList"></div></div>
       </div>
     </div>
@@ -742,6 +711,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
             <span class="card-title">Staff-wise Report</span>
             <div style="display:flex;align-items:center;gap:8px;">
               <button class="btn btn-outline btn-sm" onclick="showStaffExportModal()"><i data-lucide="download"></i> Export</button>
+              <button class="btn btn-outline btn-sm" onclick="quickPdf('all',S.staffReportMonth)" style="font-size:11px;">📄 All Staff PDF</button>
               <button class="btn btn-ghost btn-sm" onclick="staffReportPrevMonth()"><i data-lucide="chevron-left"></i></button>
               <span style="font-size:13px;font-weight:700;min-width:110px;text-align:center;" id="staffReportMonthLabel"></span>
               <button class="btn btn-ghost btn-sm" onclick="staffReportNextMonth()"><i data-lucide="chevron-right"></i></button>
@@ -760,7 +730,15 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
         <!-- Data Copy Log -->
         <div class="card mt-4">
-          <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
+          <div class="card-header">
+            <span class="card-title">Data Copy Log (Grover Events)</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input type="date" id="copyLogFrom" class="form-input" style="width:140px;font-size:12px;" onchange="renderCopyLog()">
+              <span style="font-size:12px;color:var(--text-muted);">to</span>
+              <input type="date" id="copyLogTo" class="form-input" style="width:140px;font-size:12px;" onchange="renderCopyLog()">
+              <button class="btn btn-outline btn-sm" onclick="exportCopyLogPDF()" style="font-size:11px;">📄 PDF</button>
+            </div>
+          </div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
         </div>
       </div>
@@ -785,7 +763,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Notes</th><th>Actions</th></tr></thead>
               <tbody id="billingTbody"></tbody>
             </table>
           </div>
@@ -1081,7 +1059,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount2">0 entries</span></div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Notes</th><th>Actions</th></tr></thead>
             <tbody id="billingTbody2"></tbody>
           </table>
         </div>
@@ -1298,7 +1276,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <div class="modal-body">
     <!-- Office duty warning -->
-    <div id="coOfficeWarning" style="display:none;background:var(--surface)3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
+    <div id="coOfficeWarning" style="display:none;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
       ⚠️ 8 hours is mandatory for full attendance. You are checking out early.
     </div>
     <!-- Work types -->
@@ -1354,7 +1332,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <span id="coGpsStatus">Tap to capture GPS</span>
       </div>
     </div>
-    <div class="form-group">
+        <div class="form-group">
       <label class="form-label">Check-Out Time</label>
       <input class="form-input" type="text" id="coTime" readonly style="background:var(--surface2);">
       <div class="form-hint">Auto-captured</div>
@@ -1471,7 +1449,7 @@ const nowTime = () => new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Kolk
 const fmtDate = d => { if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); };
 const escHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const toMins = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
-// Globally-unique ID: timestamp + random (collision-proof across devices)
+// Globally-unique ID
 function genUid(){ return Date.now()*1000 + Math.floor(Math.random()*1000); }
 const fmtDur = m => { if(!m||m<=0) return '—'; return Math.floor(m/60)+'h '+(m%60)+'m'; };
 // Midnight-crossing duration: if checkout < checkin time, add 24hrs
@@ -1479,7 +1457,6 @@ const dur = (ci,co) => { if(!ci||!co) return null; if(ci===co) return 0; let d=t
 const getSf = id => {
   const sf=S.staff.find(s=>s.id===id);
   if(sf) return sf;
-  // FIX 8: Deleted staff - reconstruct from log snapshot
   const snapLog=(S.logs||[]).find(l=>l&&l.staffId===id&&l.staffNameSnapshot);
   if(snapLog) return {id:id,name:snapLog.staffNameSnapshot,role:snapLog.staffRoleSnapshot||'',color:snapLog.staffColorSnapshot||'#0d6efd',status:'deleted',phone:''};
   return null;
@@ -1505,15 +1482,16 @@ function submitAdminPanel(){
   S.currentUser={role:'admin',name:S.admin.name};
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
-  if($('notifBtn')) $('notifBtn').style.display='inline-flex';
-  $('sidebarAv').textContent=ini(S.admin.name);
-  $('sidebarName').textContent=S.admin.name;
-  $('sidebarRole').textContent='Administrator';
-  hideAdminLogin();
-  // Init push notifications for admin
-  if('serviceWorker' in navigator && 'Notification' in window){
-    initPushNotifications().catch(e=>console.log('Push init failed:',e));
+  if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
+  if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
+  if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
+  // Save admin session - respect Remember Me
+  const rememberAdmin=$('adminRememberMe')&&$('adminRememberMe').checked;
+  if(rememberAdmin){
+    const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+    document.cookie='fv_admin_session='+encodeURIComponent(JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}))+';expires='+exp.toUTCString()+';path=/;SameSite=Lax';
   }
+  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now(),remember:rememberAdmin}));
   toast('Welcome back, '+S.admin.name+'!');
   go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
@@ -1583,25 +1561,21 @@ window.submitLogin = function(){
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
 
-  document.body.classList.add('staff-mode');
+  // Staff user on admin page - redirect
+          window.location.href='./';
+          return;
   $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
   $('hamburgerBtn').style.display='none';
   // Staff mode: hide GPS hint
   document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='none');
-  // Switch view BEFORE rendering to prevent dashboard bleed-through
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  if($('view-staff-portal')) $('view-staff-portal').classList.add('active');
   renderStaffPortal();
-  // Fallback re-render after data loads
-  setTimeout(()=>{
-    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
-  }, 800);
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-staff-portal').classList.add('active');
   toast('Welcome, '+sf.name+'!');
 };
 
 window.logout = function(){
   S.currentUser=null;
-  // Reset view to dashboard
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const dv=$('view-dashboard'); if(dv) dv.classList.add('active');
   document.body.classList.remove('staff-mode');
@@ -1635,8 +1609,7 @@ window.addEventListener('keydown',function(e){
   if(!ls||ls.style.display==='none') return;
   if(e.key==='Escape') hideAdminLogin();
   if(e.key==='Enter'){
-    if($('adminLoginPanel').style.display!=='none') submitAdminPanel();
-    else submitLogin();
+    submitLogin();
   }
 });
 
@@ -1671,7 +1644,9 @@ function renderStaffPortal(){
   let html='';
   if(activeLog){
       // Pre-calculate edit button visibility
-  const _canAct=activeLog.createdAt&&(Date.now()-activeLog.createdAt)<30*60*1000;
+  const [_ch,_cm]=activeLog.checkIn.split(':').map(Number);
+  const _ci=new Date(); _ci.setHours(_ch,_cm,0,0);
+  const _canEdit=Math.floor((new Date()-_ci)/60000)<=30;
   html+=`<div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-lg);padding:16px 20px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1680,8 +1655,8 @@ function renderStaffPortal(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:13px;color:var(--text-muted);">⏰ Checked in at <strong>${activeLog.checkIn}</strong></div>
         <div style="display:flex;gap:6px;">
-          ${_canAct?`<button class="btn btn-ghost btn-sm" onclick="openStaffEditModal(${activeLog.id})" style="font-size:12px;">✏️ Edit</button>`:''}
-          ${_canAct?`<button onclick="staffDeleteOwnLog(${activeLog.id})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
+          ${_canEdit?`<button class="btn btn-ghost btn-sm" onclick="openStaffEditModal(${activeLog.id})" style="font-size:12px;">✏️ Edit</button>`:''}
+          ${activeLog.createdAt&&(Date.now()-activeLog.createdAt)<30*60*1000?`<button onclick="staffDeleteOwnLog(${activeLog.id})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
         </div>
       </div>
       ${activeLog.company==='office'?`<div style="text-align:center;padding:10px;background:rgba(0,0,0,.04);border-radius:var(--radius);">
@@ -1717,12 +1692,10 @@ function renderStaffPortal(){
       html+=`<div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-weight:700;color:var(--success);">✅ Checked Out</div>
-          <div style="display:flex;gap:6px;">
-            ${_canDelCo?`<button class="btn btn-ghost btn-sm" style="font-size:12px;" onclick="openStaffEditModal(${l.id})">✏️ Edit</button>`:''}
-            ${_canDelCo?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
-          </div>
+          ${_canDelCo?`<button onclick="staffDeleteOwnCheckout(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Undo checkout (within 30 min)">🗑️ Undo Checkout</button>`:''}
         </div>
         <div style="font-size:13px;color:var(--text-muted);">${compLabel(l.company)} · ${l.checkIn} → ${l.checkOut}${_d?' · '+fmtDur(_d):''}</div>
+        ${_canEdit3?`<button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:12px;" onclick="openStaffEditModal(${l.id})">✏️ Edit details</button>`:''}
       </div>`;
     });
     html+=`<button class="portal-btn portal-btn-in" onclick="openCheckinModal(${sf.id})">
@@ -1761,33 +1734,18 @@ function startLiveTimer(checkInTime){
   update();
   _timerInterval=setInterval(update,1000);
 }
-function onPortalMonthChange(){
-  S.portalSelectedMonth=$('portalMonthSelect').value;
-  renderStaffHistory();
-}
 function renderStaffHistory(){
   const sf=getSf(S.currentUser.staffId); if(!sf) return;
   const now=new Date();
-  // Build last 3 months (current + 2 prior) for the dropdown
-  const monthOptions=[];
-  for(let i=0;i<3;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    const ymVal=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    monthOptions.push({val:ymVal,label:d.toLocaleDateString('en-IN',{month:'long',year:'numeric'}),year:d.getFullYear(),month:d.getMonth()});
-  }
-  if(!S.portalSelectedMonth) S.portalSelectedMonth=monthOptions[0].val;
-  const sel=$('portalMonthSelect');
-  if(sel) sel.innerHTML=monthOptions.map(o=>`<option value="${o.val}"${o.val===S.portalSelectedMonth?' selected':''}>${o.label}</option>`).join('');
-  const chosen=monthOptions.find(o=>o.val===S.portalSelectedMonth)||monthOptions[0];
-  const year=chosen.year, month=chosen.month;
-  const ym=chosen.val;
-  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
+  const year=now.getFullYear(), month=now.getMonth();
+  const ym=year+'-'+String(month+1).padStart(2,'0');
+  $('portalMonthLabel').textContent=now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym));
   const logsByDate={};
   myLogs.forEach(l=>{ if(!logsByDate[l.date]) logsByDate[l.date]=[]; logsByDate[l.date].push(l); });
   const uniqueDays=Object.keys(logsByDate).length;
   const daysInMonth=new Date(year,month+1,0).getDate();
-  const lastDay=isCurrentMonth?Math.min(daysInMonth, now.getDate()):daysInMonth;
+  const lastDay=Math.min(daysInMonth, now.getDate());
   const todayStr=today();
   const nowMs=Date.now();
   let rows='';
@@ -1806,15 +1764,6 @@ function renderStaffHistory(){
         const showDur=isOffice&&durMins!==null&&durMins<480;
         const durStr=showDur?fmtDur(durMins):'';
         const canDelete=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
-        let coTs=l.coCreatedAt||0;
-        if(!coTs&&l.checkOut){
-          const [_coh2,_com2]=l.checkOut.split(':').map(Number);
-          const [_yy2,_mm2,_dd2]=dateStr.split('-').map(Number);
-          const _coD2=new Date(_yy2,_mm2-1,_dd2,_coh2,_com2,0,0);
-          coTs=_coD2.getTime();
-        }
-        const canDeleteCo=l.checkOut&&coTs>0&&(nowMs-coTs)<30*60*1000;
-        const canAct=canDelete||canDeleteCo;
         const prefix=li===0?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">${dayLabel}</div>`:'';
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
@@ -1823,8 +1772,7 @@ function renderStaffHistory(){
               ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${showDur?`<span style="opacity:.6;color:var(--danger);">· ${durStr}</span>`:''}`:''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
-              ${canAct?`<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;" onclick="openStaffEditModal(${l.id})">✏️ Edit</button>`:''}
-              ${canAct?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
+              ${canDelete?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
               <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ ${location}</span>
             </div>
           </div>
@@ -1851,43 +1799,26 @@ function renderStaffHistory(){
   lucide.createIcons();
 }
 
-async function staffDeleteOwnLog(logId){
-  logId=parseInt(logId);
-  const l=S.logs.find(x=>x.id==logId);
-  if(!l){toast('Log not found','err');return;}
-  const nowMs=Date.now();
-  const ciOk=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
-  const coOk=l.coCreatedAt&&(nowMs-l.coCreatedAt)<30*60*1000;
-  if(!ciOk&&!coOk){
-    toast('Delete window expired (30 min)','err');
-    renderStaffPortal();
-    renderStaffHistory();
-    return;
-  }
-  const _ok1=await showConfirm('Delete this entry? This cannot be undone.');
-  if(!_ok1) return;
-  const idx=S.logs.findIndex(x=>x.id==logId);
-  if(idx<0) return;
-  const removed=S.logs.splice(idx,1);
-  doFirebaseSave(buildSavePayload())
-    .then(()=>{
-      renderStaffPortal();
-      renderStaffHistory();
-      toast('Entry deleted');
-    })
-    .catch(e=>{
-      // Rollback — re-insert the log
-      S.logs.splice(idx,0,removed[0]);
-      toast('Failed to delete. Check your internet and try again.','err');
-      console.error('Delete failed:',e);
-    });
+function hideCheckinSuccess(){
+  $('checkinSuccess').classList.remove('show');
+  $('checkinSuccess').classList.remove('show');
+  $('portalActionArea').style.display='flex';
+  renderStaffPortal();
 }
-
+function showSuccessPopup(title, msg){
+  const overlay=$('fvSuccessOverlay');
+  if(!overlay) return;
+  $('fvSuccessTitle').textContent=title;
+  $('fvSuccessMsg').textContent=msg||'';
+  overlay.style.display='flex';
+  clearTimeout(window._successTimer);
+  window._successTimer=setTimeout(function(){overlay.style.display='none';},2000);
+}
+function isOnline(){ return navigator.onLine; }
 async function staffDeleteOwnCheckout(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
-  // Check 30 min window from checkout time
   let coTs=l.coCreatedAt||0;
   if(!coTs&&l.checkOut){
     const [_coh3,_com3]=l.checkOut.split(':').map(Number);
@@ -1903,7 +1834,6 @@ async function staffDeleteOwnCheckout(logId){
   }
   const _ok2=await showConfirm('Undo this checkout? You will be reverted to checked-in state.');
   if(!_ok2) return;
-  // Remove checkout only — keep check-in intact
   l.checkOut='';
   l.coGpsLat=null;
   l.coGpsLng=null;
@@ -1915,25 +1845,28 @@ async function staffDeleteOwnCheckout(logId){
   toast('Checkout removed — you are checked in again');
 }
 
+async function staffDeleteOwnLog(logId){
+  logId=parseInt(logId);
+  const l=S.logs.find(x=>x.id==logId);
+  if(!l){toast('Log not found','err');return;}
+  // Double-check 30 min window
+  if(!l.createdAt||(Date.now()-l.createdAt)>=30*60*1000){
+    toast('Delete window expired (30 min)','err');
+    renderStaffHistory();
+    return;
+  }
+  if(!await showConfirm('Delete this check-in? This cannot be undone.')) return;
+  const idx=S.logs.findIndex(x=>x.id==logId);
+  if(idx>=0) S.logs.splice(idx,1);
+  saveDataImmediate();
+  renderStaffPortal();
+  renderStaffHistory();
+  toast('Check-in deleted');
+}
+
 function hideCheckinSuccess(){
   $('checkinSuccess').classList.remove('show');
   $('portalActionArea').style.display='flex';
-}
-// Show a 2-second full-screen success popup (only after Firebase confirms)
-function showSuccessPopup(title, msg){
-  const overlay=$('fvSuccessOverlay');
-  if(!overlay) return;
-  $('fvSuccessTitle').textContent=title;
-  $('fvSuccessMsg').textContent=msg||'';
-  overlay.style.display='flex';
-  clearTimeout(window._successTimer);
-  window._successTimer=setTimeout(function(){
-    overlay.style.display='none';
-  },2000);
-}
-// Check network connectivity before attempting save
-function isOnline(){
-  return navigator.onLine;
 }
 
 // ===== NAV =====
@@ -1970,7 +1903,6 @@ function closeM(id){
       else if(vid==='staff') renderStaff();
       else if(vid==='logs') renderLogs();
       else if(vid==='reports') renderReports();
-      else if(vid==='staff-portal'&&S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
     }
   }
 }
@@ -1996,7 +1928,6 @@ function openStaffLogs(sfId){
 function renderDash(){
   const td=today();
   $('dashDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  // Use date picker value if set, otherwise today
   const dp=$('activityDatePicker');
   if(dp&&!dp.value) dp.value=td;
   const viewDate=(dp&&dp.value)||td;
@@ -2004,7 +1935,6 @@ function renderDash(){
   const active=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&!l.checkOut).length;
   const done=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&l.checkOut).length;
   $('activeCount').textContent=active+' active';
-  // Update date label if viewing different date
   const _actDp=$('activityDatePicker'); if(_actDp&&_actDp.value&&_actDp.value!==td){$('activeCount').textContent=(tLogs.filter(l=>l.checkIn&&!l.checkOut).length)+' active';}
 
   // All staff — sorted: on duty first, then done, then not in
@@ -2372,10 +2302,8 @@ function submitCheckin(){
   if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
   const isStaff=isStaffUser();
   const staffId=isStaff?S.currentUser.staffId:parseInt(S.ciCompany==='office'?$('ciOfficeStaff').value:$('ciStaff').value);
-  // FIX 5: Block double check-in - must check out first
   const _activeLog=findActiveLog(staffId);
   if(_activeLog){toast('Already checked in. Please check out first.','err');closeM('ciModal');return;}
-  // FIX 7: GPS mandatory - no fake fallback
   if(!S.ciGps||!S.ciGps.lat){toast('GPS location required. Please enable location and try again.','err');return;}
   let venue,notes,checkInTime,clientName='';
   if(S.ciCompany==='office'){
@@ -2421,14 +2349,11 @@ function submitCheckin(){
     ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
     workTypes:(()=>{const sel=document.querySelector('input[name="ciWorkType"]:checked');return sel?[sel.value]:[];})(),prints:0,printSize:'',lateReason:''
   };
-  // Disable submit button to prevent double-tap
   const _ciBtn=document.querySelector('#ciModal .btn-primary');
   if(_ciBtn){_ciBtn.disabled=true;_ciBtn.textContent='Saving...';}
   S.logs.push(log);
-  // Firebase-first: only update UI after confirmed save
   doFirebaseSave(buildSavePayload())
     .then(()=>{
-      syncSelfiesAndCleanup(); // upload selfie to Storage now that DB save confirmed
       syncLogToFirestore(log);
       syncStaffToFirestore(getSf(log.staffId)||{id:log.staffId,name:'Staff',role:'',phone:'',status:'active',color:'#0d6efd'});
       closeM('ciModal');
@@ -2437,23 +2362,19 @@ function submitCheckin(){
       sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
       if(isStaff){
         renderStaffPortal();
-        showSuccessPopup('Check-In Successful ✅', 'Saved at '+checkInTime+' — '+(log.company==='office'?'Office':venue));
+        showSuccessPopup('Check-In Successful ✅','Saved at '+checkInTime+' — '+_ciCo2);
       } else {
         const sf2=getSf(staffId);
         toast((sf2?sf2.name:'Staff')+' checked in — '+checkInTime);
-        showSuccessPopup('Check-In Successful ✅', (sf2?sf2.name:'Staff')+' — '+checkInTime);
+        showSuccessPopup('Check-In Successful ✅',(sf2?sf2.name:'Staff')+' — '+checkInTime);
         renderStatusBoard();
       }
     })
     .catch(e=>{
-      // Rollback — remove log from memory since save failed
       const idx=S.logs.findIndex(l=>l.id===log.id);
       if(idx>=0) S.logs.splice(idx,1);
       if(_ciBtn){_ciBtn.disabled=false;_ciBtn.textContent='Confirm Check-In';}
-      const errMsg=e&&e.message&&e.message.includes('timed out')
-        ?'Poor network connection. Please move to a better signal area and try again.'
-        :'Check-in failed. Check your internet connection and try again.';
-      toast(errMsg,'err');
+      toast('Failed to save. Check your internet connection and try again.','err');
       console.error('Check-in save failed:',e);
     });
 }
@@ -2468,10 +2389,8 @@ function openCheckoutModal(staffId){
   $('coStaffName').textContent=sf?sf.name:'';
   $('coTime').value=nowTime();
   $('coNotes').value='';
-  // Reset GPS status
   if($('coGpsStatus')) $('coGpsStatus').textContent='Tap to capture GPS';
   if($('coGpsBadge')) $('coGpsBadge').style.borderColor='var(--border)';
-  // Auto-capture GPS on open
   captureCoGps();
   $('coCopyName').value=''; $('coCopyPhone').value='';
   $('coOfficeWarning').style.display='none';
@@ -2560,13 +2479,11 @@ function submitCheckout(){
   const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
   if(log.checkOut){toast('Already checked out','err');closeM('coModal');return;}
-  if(!S.coGps){toast('Please capture GPS location first','err');captureCoGps();return;}
+  if(!S.coGps){toast('Please capture GPS first','err');captureCoGps();return;}
   if(log.company!=='office'){
     if(log.company==='grover'){
-      // Preserve work types from check-in
       const existingWt=(log.workTypes&&log.workTypes.length)?log.workTypes[0]:'';
       const isPhotobooth=existingWt.toLowerCase()==='photobooth';
-      // Data copy
       if(!isPhotobooth){
         if(S.dataCopyAnswer===null){toast('Please indicate if data was copied','err');return;}
         if(S.dataCopyAnswer){
@@ -2588,7 +2505,7 @@ function submitCheckout(){
       }
     }
   }
-  // Snapshot original values for rollback
+  // Snapshot for rollback
   const _prevCheckOut=log.checkOut;
   const _prevCoCreatedAt=log.coCreatedAt;
   const _prevCoNotes=log.coNotes;
@@ -2600,25 +2517,22 @@ function submitCheckout(){
   log.coCreatedAt=Date.now();
   log.coNotes=$('coNotes').value.trim();
   if(S.coGps){ log.coGpsLat=S.coGps.lat; log.coGpsLng=S.coGps.lng; log.coGpsArea=S.coGpsArea||''; }
-  // Disable submit button
   const _coBtn=document.querySelector('#coModal .btn-primary');
   if(_coBtn){_coBtn.disabled=true;_coBtn.textContent='Saving...';}
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
   const _coName=sf?sf.name:'Staff';
   const _coCo=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-  // Firebase-first: only update UI after confirmed save
   doFirebaseSave(buildSavePayload())
     .then(()=>{
       syncLogToFirestore(log);
       closeM('coModal');
-      showSuccessPopup('Check-Out Successful ✅', log.checkIn+' → '+log.checkOut+' · '+fmtDur(d));
+      showSuccessPopup('Check-Out Successful ✅', log.checkIn+' \u2192 '+log.checkOut+' \xB7 '+fmtDur(d));
       toast(_coName+' checked out — '+fmtDur(d));
       sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`+buildTgDetails(log));
       if(isStaffUser()) renderStaffPortal(); else {renderStatusBoard();renderDash();}
     })
     .catch(e=>{
-      // Rollback checkout fields — leave log intact as still checked-in
       log.checkOut=_prevCheckOut;
       log.coCreatedAt=_prevCoCreatedAt;
       log.coNotes=_prevCoNotes;
@@ -2626,10 +2540,7 @@ function submitCheckout(){
       log.coGpsLng=_prevCoGpsLng;
       log.coGpsArea=_prevCoGpsArea;
       if(_coBtn){_coBtn.disabled=false;_coBtn.textContent='Confirm Check-Out';}
-      const errMsgCo=e&&e.message&&e.message.includes('timed out')
-        ?'Poor network connection. Please move to a better signal area and try again.'
-        :'Check-out failed. Check your internet connection and try again.';
-      toast(errMsgCo,'err');
+      toast('Failed to save. Check your internet connection and try again.','err');
       console.error('Check-out save failed:',e);
     });
 }
@@ -2728,7 +2639,6 @@ function submitStaff(){
 }
 async function deleteStaff(id){
   if(!await showConfirm('Remove this staff member? Their attendance history will be preserved.','Remove')) return;
-  // FIX 8: Snapshot staff details onto all their logs so history shows real name forever
   const sf=S.staff.find(s=>s.id===id);
   if(sf){
     (S.logs||[]).forEach(l=>{
@@ -2771,8 +2681,8 @@ function renderLogs(){
     return `<div class="log-mobile-card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
         <div style="position:relative;flex-shrink:0;">
-          ${l.selfie&&l.selfie.startsWith('data:')?
-            `<img src="${l.selfie}" onclick="viewSelfie(${l.id})" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;">`:
+          ${(l.selfieUrl||(l.selfie&&l.selfie.startsWith('data:')))?
+            `<img src="${l.selfieUrl||l.selfie}" onclick="viewSelfie(${l.id})" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;">`:
             `<div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;flex-shrink:0;">${ini(sf.name)}</div>`}
         </div>
         <div style="flex:1;min-width:0;overflow:hidden;">
@@ -2806,7 +2716,7 @@ function renderLogs(){
       <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Active</span>'}</td>
       <td style="font-size:12px;">${fmtDur(d)}</td>
       <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
-      <td>${(l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'))?`<img src="${l.selfieUrl||l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td>${(l.selfieUrl||(l.selfie&&l.selfie.startsWith('data:')))?`<img src="${l.selfieUrl||l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
@@ -2828,7 +2738,7 @@ function viewGps(logId){
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px;">🔴 Check-Out GPS</div>
       <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;">
         <div><strong>GPS:</strong> ${l.coGpsLat.toFixed(5)}, ${l.coGpsLng.toFixed(5)}</div>
-        ${l.coGpsArea?`<div style="margin-top:6px;padding:8px;background:var(--surface)3cd;border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:#856404;font-size:14px;">${l.coGpsArea}</div></div>`:''}
+        ${l.coGpsArea?`<div style="margin-top:6px;padding:8px;background:#fff3cd;border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:#856404;font-size:14px;">${l.coGpsArea}</div></div>`:''}
       </div>
       <a href="https://www.google.com/maps?q=${l.coGpsLat},${l.coGpsLng}" target="_blank" rel="noopener" class="btn btn-outline w-full" style="justify-content:center;margin-top:8px;font-size:13px;">Open Check-Out in Maps</a>
     </div>`:'';
@@ -2847,9 +2757,11 @@ function viewSelfie(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
   const src=l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'?l.selfie:null);
-  if(!src){toast('Selfie not available','err');return;}
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div><div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
+  $('gpsModalBody').innerHTML=`<div style="text-align:center;">${src
+    ?`<img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div>`
+    :`<div style="width:220px;height:220px;border-radius:50%;background:var(--surface2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;flex-direction:column;gap:8px;"><span style="font-size:32px;">📷</span><span style="font-size:12px;color:var(--text-muted);">No selfie stored</span></div>`
+  }<div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue||'—'}</div></div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Check-In Selfie';
   openM('gpsModal');
 }
@@ -2895,6 +2807,7 @@ function switchReportTab(idx){
   if(idx===4) renderBilling();
 }
 function renderReports(){
+  if(!$('companyReport')) return;
   const groverL=S.logs.filter(l=>l.company==='grover').length;
   const weddingL=S.logs.filter(l=>l.company==='wedding').length;
   const officeL=S.logs.filter(l=>l.company==='office').length;
@@ -2903,16 +2816,89 @@ function renderReports(){
     <div style="padding:12px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);cursor:pointer;" onclick="go('wedding-duties',document.querySelector('[onclick*=wedding-duties]'))"><div style="font-weight:700;margin-bottom:3px;">💍 Wedding Division</div><div style="font-size:13px;color:var(--text-muted);">${weddingL} attendance records</div></div>
     <div style="padding:12px;background:var(--purple-light);border-radius:var(--radius-sm);border-left:4px solid var(--purple);cursor:pointer;" onclick="go('office-duties',document.querySelector('[onclick*=office-duties]'))"><div style="font-weight:700;margin-bottom:3px;">🏢 Office Duty</div><div style="font-size:13px;color:var(--text-muted);">${officeL} attendance records</div></div>
   </div>`;
-  const copyLogs=S.logs.filter(l=>l.company==='grover'&&l.copyName);
-  $('copyLogTbody').innerHTML=copyLogs.length?copyLogs.map(l=>{
-    const sf=getSf(l.staffId);
-    return `<tr><td><div class="staff-cell"><div class="av" style="background:${sf?sf.color:'#ccc'};width:28px;height:28px;font-size:11px;">${sf?ini(sf.name):'?'}</div>${sf?sf.name:'—'}</div></td><td>${fmtDate(l.date)}</td><td>${l.venue}</td><td style="font-weight:600;">${l.copyName}</td><td>${l.copyPhone}</td></tr>`;
-  }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
+  renderCopyLog();
   renderStaffWiseReport();
   lucide.createIcons();
 }
 
-// ===== STAFF-WISE REPORT =====
+function renderCopyLog(){
+  const from=$('copyLogFrom')&&$('copyLogFrom').value;
+  const to=$('copyLogTo')&&$('copyLogTo').value;
+  // Fix: filter by copyName being non-empty string, not just truthy
+  let copyLogs=S.logs.filter(function(l){return l.company==='grover'&&l.copyName&&l.copyName.trim()!=='';});
+  if(from) copyLogs=copyLogs.filter(function(l){return l.date>=from;});
+  if(to) copyLogs=copyLogs.filter(function(l){return l.date<=to;});
+  copyLogs.sort(function(a,b){return b.date.localeCompare(a.date);});
+  const tbody=$('copyLogTbody'); if(!tbody) return;
+  tbody.innerHTML=copyLogs.length?copyLogs.map(function(l){
+    const sf=getSf(l.staffId);
+    return '<tr>'
+      +'<td><div class="staff-cell"><div class="av" style="background:'+(sf?sf.color:'#ccc')+';width:28px;height:28px;font-size:11px;">'+(sf?ini(sf.name):'?')+'</div>'+(sf?sf.name:'—')+'</div></td>'
+      +'<td>'+fmtDate(l.date)+'</td>'
+      +'<td>'+(l.venue||'—')+'</td>'
+      +'<td style="font-weight:600;">'+(l.copyName||'—')+'</td>'
+      +'<td>'+(l.copyPhone||'—')+'</td>'
+      +'</tr>';
+  }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records found</p></div></td></tr>';
+}
+
+function exportCopyLogPDF(){
+  const from=$('copyLogFrom')&&$('copyLogFrom').value;
+  const to=$('copyLogTo')&&$('copyLogTo').value;
+  var copyLogs=S.logs.filter(function(l){return l.company==='grover'&&l.copyName&&l.copyName.trim()!=='';});
+  if(from) copyLogs=copyLogs.filter(function(l){return l.date>=from;});
+  if(to) copyLogs=copyLogs.filter(function(l){return l.date<=to;});
+  copyLogs.sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!copyLogs.length){toast('No data copy records to export','err');return;}
+  var fmtD=function(ds){return new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
+  var periodLabel=from&&to?(fmtD(from)+' to '+fmtD(to)):from?('From '+fmtD(from)):to?('Until '+fmtD(to)):'All Records';
+  var rows=copyLogs.map(function(l,i){
+    var sf=getSf(l.staffId);
+    return '<tr style="'+(i%2===0?'background:#f9f9f9;':'')+'">'
+      +'<td style="text-align:center;color:#666;">'+(i+1)+'</td>'
+      +'<td style="white-space:nowrap;">'+fmtD(l.date)+'</td>'
+      +'<td>'+(sf?sf.name:'—')+'</td>'
+      +'<td>'+(l.venue||'—')+'</td>'
+      +'<td style="font-weight:600;">'+(l.copyName||'—')+'</td>'
+      +'<td>'+(l.copyPhone||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  var css='*{margin:0;padding:0;box-sizing:border-box;}'
+    +'body{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;color:#222;background:#fff;padding:28px 32px;}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a1a2e;padding-bottom:10px;margin-bottom:20px;}'
+    +'.title{font-size:20px;font-weight:800;color:#1a1a2e;}'
+    +'.period{font-size:13px;color:#555;font-weight:600;}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px;}'
+    +'th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle;}'
+    +'.footer{margin-top:20px;font-size:10px;color:#aaa;text-align:center;padding-top:12px;border-top:1px solid #eee;}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+  var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Data Copy Log</title><style>'+css+'</style></head><body>'
+    +'<div class="header"><div class="title">Fotovision — Data Copy Log</div><div class="period">'+periodLabel+'</div></div>'
+    +'<table><thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
+    +'</body></html>';
+  var fname='DataCopyLog'+(from?'_'+from:'')+(to&&to!==from?'_to_'+to:'')+'.pdf';
+  printAndSavePDF(html, fname);
+}
+// Helper: render HTML as PDF — uses iframe to avoid new tab, filename shown in print dialog
+function printAndSavePDF(html, filename){
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;';
+  document.body.appendChild(iframe);
+  iframe.src=url;
+  iframe.onload=function(){
+    try{
+      iframe.contentWindow.focus();
+      iframe.contentDocument.title=filename.replace('.pdf','');
+      iframe.contentWindow.print();
+    }catch(e){ window.open(url,'_blank'); }
+    setTimeout(function(){ document.body.removeChild(iframe); URL.revokeObjectURL(url); },60000);
+  };
+}
 function staffReportPrevMonth(){
   const [y,m]=S.staffReportMonth.split('-').map(Number);
   const d=new Date(y,m-2,1);
@@ -2990,7 +2976,7 @@ function renderStaffWiseReport(){
         } else {
           const isUL=(S.uninformedLeaves[sf.id]||[]).some(l=>l.date===ds);
           if(isUL){
-            dayRows+=`<div class="sw-day-row" style="padding:6px 12px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:8px;background:var(--surface)3cd;">
+            dayRows+=`<div class="sw-day-row" style="padding:6px 12px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:8px;background:#fff3cd;">
               <div class="sw-day-label" style="width:72px;font-size:11px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
               <span style="font-size:11px;font-weight:700;color:#856404;">🟠 UL</span>
               <button class="btn btn-ghost btn-sm sw-mark-ul" style="margin-left:auto;padding:1px 6px;font-size:10px;" onclick="removeUninformedLeave(${sf.id},'${ds}')">Remove</button>
@@ -3014,7 +3000,7 @@ function renderStaffWiseReport(){
         </div>
         <div style="display:flex;align-items:center;gap:8px;" class="sw-card-header-right">
           <span class="badge badge-red">🔴 ${leaveDays} leave${leaveDays!==1?'s':''}</span>${plDays?`<span class="badge badge-green">🟢 ${plDays} PL</span>`:''}${ulDays?`<span class="badge" style="background:#fef3c7;color:#92400e;">🚫 ${ulDays} UL</span>`:''}
-          <svg id="${cardId}_icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <button class="btn btn-outline btn-sm" style="font-size:11px;padding:2px 8px;" onclick="event.stopPropagation();quickPdf(${sf.id},'${ym}')">📄 PDF</button>
         </div>
       </div>
       <div id="${cardId}" style="display:none;">${dayRows||'<div class="empty" style="padding:24px;"><p>No duties this month</p></div>'}</div>
@@ -3029,6 +3015,14 @@ function toggleSwCard(id){
   el.style.display=open?'none':'block';
   const icon=$(id+'_icon');
   if(icon) icon.style.transform=open?'':'rotate(180deg)';
+}
+function quickPdf(sfId, month){
+  // Quick monthly PDF — either one staff or all staff for the given month
+  if(sfId==='all'){
+    doExportStaffPDF(undefined, undefined, month);
+  } else {
+    doExportStaffPDF(sfId, month);
+  }
 }
 
 // ===== SETTINGS =====
@@ -3193,7 +3187,7 @@ function renderGroverDailyChart(logs, month){
         <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#FFB347;border-radius:3px;display:inline-block;"></span>Dinner</span>
       </div>
     </div>
-    <div class="daily-chart-wrap" style="background:var(--surface);border-radius:12px;padding:16px 4px 0;border:1px solid var(--border);"><div class="daily-chart" style="gap:0;">${bars}</div></div>
+    <div class="daily-chart-wrap" style="background:var(--surface);border-radius:12px;padding:16px 8px 0;border:1px solid var(--border);"><div class="daily-chart">${bars}</div></div>
     <div id="chartTooltip" class="chart-tooltip"></div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:0 2px;">
       ${totalRev>0?`Month Total: <strong style="color:var(--text);">&#8377;${totalRev.toLocaleString('en-IN')}</strong> &nbsp;·&nbsp; ${totalShifts} shift${totalShifts!==1?'s':''} &nbsp;·&nbsp; ${dinnerCount} dinner shift${dinnerCount!==1?'s':''}`:'No confirmed billing data yet for this month.'}
@@ -3359,7 +3353,7 @@ function savePerStaffTime(staffId){
   sf.officeStartTime=v;
   saveData();
   const m=$('perStaffTimeMsg_'+staffId); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
-  toast(sf.name+'\'s check-in time saved: '+v);
+  toast(sf.name+"'s check-in time saved: "+v);
 }
 function toggleOfficeTime(radio){
   const ot=$('sfOfficeTime'); if(!ot) return;
@@ -3652,8 +3646,6 @@ function toggleStaffEditFields(company){
 function submitStaffEdit(logId){
   logId=parseInt(logId);
   const log=S.logs.find(l=>l.id==logId); if(!log) return;
-  // Snapshot for rollback
-  const _prev={company:log.company,venue:log.venue,workTypes:[...(log.workTypes||[])],clientName:log.clientName,copyName:log.copyName,copyPhone:log.copyPhone,ciNotes:log.ciNotes};
   log.company=$('seCompany').value;
   const isOff=log.company==='office', isWed=log.company==='wedding', isGro=log.company==='grover';
   log.venue=isOff?'Office':($('seVenue')?$('seVenue').value.trim()||'—':'—');
@@ -3664,22 +3656,10 @@ function submitStaffEdit(logId){
   log.copyName=isGro?($('seCopyName')?$('seCopyName').value.trim():''):'';
   log.copyPhone=isGro?($('seCopyPhone')?$('seCopyPhone').value.trim():''):'';
   log.ciNotes=$('seNotes')?$('seNotes').value.trim():'';
-  const _saveBtn=document.querySelector('#gpsModal .btn-primary');
-  if(_saveBtn){_saveBtn.disabled=true;_saveBtn.textContent='Saving...';}
-  doFirebaseSave(buildSavePayload())
-    .then(()=>{
-      closeM('gpsModal');
-      renderStaffPortal();
-      renderStaffHistory();
-      toast('Details updated');
-    })
-    .catch(e=>{
-      // Rollback
-      Object.assign(log,_prev);
-      if(_saveBtn){_saveBtn.disabled=false;_saveBtn.textContent='Save';}
-      toast('Failed to save. Check your internet and try again.','err');
-      console.error('Edit save failed:',e);
-    });
+  saveData();
+  closeM('gpsModal');
+  renderStaffPortal();
+  toast('Details updated');
 }
 function openDataSizeInput(sizeId,gId,cId,type,idx){
   const disp=document.getElementById(sizeId+'_display');
@@ -4920,7 +4900,7 @@ function _renderBulkModal(){
         <div></div>
       </div>
       <div id="blkRowsContainer">${rowsHTML}</div>
-      <div id="blkDupeWarn" style="display:none;font-size:12px;margin:6px 0;padding:8px 10px;background:var(--surface)8e1;border:1px solid #f59e0b;border-radius:6px;color:#7c4a00;"></div>
+      <div id="blkDupeWarn" style="display:none;font-size:12px;margin:6px 0;padding:8px 10px;background:#fff8e1;border:1px solid #f59e0b;border-radius:6px;color:#7c4a00;"></div>
       <button onclick="_bulkAddRow()" class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;margin-bottom:16px;">+ Add Another Day</button>
       <button onclick="submitBulkLogs()" class="btn btn-primary" style="width:100%;font-size:15px;padding:12px;">💾 Save All Logs</button>
     </div>`);
@@ -5166,7 +5146,7 @@ function renderBilling(){
 
   // Main table
   if(!entries.length){
-    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
+    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="12"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
   } else {
     const billingHTML=entries.map((e,idx)=>{
       const _pbOv=e.wt&&e.wt.toLowerCase()==='photobooth'&&S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
@@ -5177,11 +5157,13 @@ function renderBilling(){
         return `<tr style="background:var(--primary-light);">
           <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
           <td style="font-size:12px;white-space:nowrap;">${fmtDate(me.date)}</td>
-          <td colspan="4" style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
-          <td></td>
+          <td colspan="2" style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
+          <td style="font-size:12px;color:var(--text-muted);">${me.venue||'—'}</td>
+          <td></td><td></td>
           <td><span class="badge badge-blue" style="font-size:10px;">Manual</span></td>
           <td style="font-size:13px;">₹${me.amount.toLocaleString('en-IN')}</td>
           <td style="font-weight:700;font-size:13px;">₹${me.amount.toLocaleString('en-IN')}</td>
+          <td></td>
           <td><button class="btn btn-ghost btn-sm" onclick="editManualBillingEntry('${S.billingMonth}','${me.id}')" title="Edit">✏️</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteManualBillingEntry('${S.billingMonth}','${me.id}')" title="Delete">🗑️</button></td>
         </tr>`;
       }
@@ -5202,6 +5184,10 @@ function renderBilling(){
         <td style="font-size:13px;text-align:center;">${e.isDinner?'<span class="billing-double-badge">🌙 Yes</span>':''}</td>
         <td style="font-size:13px;">${rateDisplay}${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?'<span title="Custom rate" style="font-size:10px;color:var(--warning);margin-left:4px;">✏️</span>':''}</td>
         <td style="font-weight:700;font-size:13px;">${amtStr}</td>
+        <td style="font-size:11px;color:var(--text-muted);max-width:140px;">
+          ${e.log.billingNotes?`<span title="${escHtml(e.log.billingNotes)}">${escHtml(e.log.billingNotes.length>30?e.log.billingNotes.slice(0,30)+'…':e.log.billingNotes)}</span> `:''}
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:1px 5px;" onclick="editBillingNotes(${e.log.id})" title="Add/Edit Notes">✏️</button>
+        </td>
         <td>${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?`<button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="resetBillingRate('${e.overrideKey}')" title="Reset to default">↩</button>`:''}</td>
       </tr>`;
     }).join('');
@@ -5222,7 +5208,7 @@ function renderBilling(){
     const dinners=d.entries.filter(e=>e.isDinner).length;
     const wtLines={};
     d.entries.forEach(e=>{ if(!wtLines[e.wt]) wtLines[e.wt]={count:0,total:0,hasTBD:false}; wtLines[e.wt].count++; if(e.rate!=null)wtLines[e.wt].total+=e.rate; else wtLines[e.wt].hasTBD=true; });
-    return `<div class="billing-subtotal-card" style="background:var(--surface);border:1px solid var(--border);">
+    return `<div class="billing-subtotal-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
         <div style="flex:1;"><div style="font-weight:700;">${d.sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${d.entries.length} entr${d.entries.length===1?'y':'ies'}${dinners?' · '+dinners+' dinner shift'+(dinners>1?'s':''):''}</div></div>
@@ -5237,7 +5223,7 @@ function renderBilling(){
       </div>
     </div>`;
   }).join('');
-  if(manualTotal>0) subtotalHTML+=`<div class="billing-subtotal-card" style="background:var(--surface);border:1px solid var(--border);"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:var(--primary);">Manual Entries</span><span style="font-size:18px;font-weight:800;color:var(--primary);">₹${manualTotal.toLocaleString('en-IN')}</span></div></div>`;
+  if(manualTotal>0) subtotalHTML+=`<div class="billing-subtotal-card"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:var(--primary);">Manual Entries</span><span style="font-size:18px;font-weight:800;color:var(--primary);">₹${manualTotal.toLocaleString('en-IN')}</span></div></div>`;
   ['billingSubtotals','billingSubtotals2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=subtotalHTML||'<div class="empty"><p>No billable entries</p></div>';});
 
   // Grand total
@@ -5275,13 +5261,13 @@ function setPbRate(overrideKey, val){
   toast('Photobooth rate saved');
 }
 async function editBillingRate(overrideKey, currentRate){
-  const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'');
+  const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'', 'number');
   if(val===null) return;
   if(!S.groverPriceOverrides) S.groverPriceOverrides={};
   if(val.toString().trim()===''){
     delete S.groverPriceOverrides[overrideKey];
   } else {
-    const n=parseInt(val.toString().trim());
+    const n=parseInt(val.trim());
     if(isNaN(n)||n<0){toast('Invalid amount','err');return;}
     S.groverPriceOverrides[overrideKey]=n;
   }
@@ -5307,6 +5293,7 @@ function showAddManualEntryModal(month, editId){
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Description *</label><input class="form-input" id="mbeDesc" placeholder="e.g. Album Printing, Video Editing, Printer Rental" value="${existing?escHtml(existing.description):''}"></div>
       <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="mbeDate" value="${existing?existing.date:today}"></div>
+      <div class="form-group"><label class="form-label">Venue</label><input class="form-input" id="mbeVenue" placeholder="e.g. Taj Palace, New Delhi" value="${existing?escHtml(existing.venue||''):''}"></div>
       <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" type="number" id="mbeAmount" placeholder="0" value="${existing?existing.amount:''}"></div>
       <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="mbeNotes" placeholder="Optional note" value="${existing?escHtml(existing.notes||''):''}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveManualBillingEntry('${month}')">Save Entry</button>
@@ -5316,6 +5303,7 @@ function showAddManualEntryModal(month, editId){
 function saveManualBillingEntry(month){
   const desc=$('mbeDesc').value.trim();
   const date=$('mbeDate').value.trim();
+  const venue=$('mbeVenue')?$('mbeVenue').value.trim():'';
   const amtStr=$('mbeAmount').value.trim();
   const notes=$('mbeNotes').value.trim();
   if(!desc){toast('Description is required','err');return;}
@@ -5326,10 +5314,10 @@ function saveManualBillingEntry(month){
   if(!S.groverManualEntries[month]) S.groverManualEntries[month]=[];
   if(_editingManualId){
     const idx=S.groverManualEntries[month].findIndex(m=>m.id===_editingManualId);
-    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:desc,amount,notes};
+    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:desc,venue,amount,notes};
   } else {
     const newId='m'+Date.now();
-    S.groverManualEntries[month].push({id:newId,date,description:desc,amount,notes});
+    S.groverManualEntries[month].push({id:newId,date,description:desc,venue,amount,notes});
   }
   saveData(); closeModal(); renderBilling(); toast('Entry saved ✓');
 }
@@ -5342,6 +5330,15 @@ async function deleteManualBillingEntry(month,id){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
   }
   saveData(); renderBilling(); toast('Entry deleted');
+}
+
+async function editBillingNotes(logId){
+  logId=parseInt(logId);
+  const log=S.logs.find(l=>l.id==logId); if(!log) return;
+  const val=await showPrompt('Notes for this billing entry:', log.billingNotes||'', 'text');
+  if(val===null) return;
+  log.billingNotes=val.trim();
+  saveData(); renderBilling(); toast('Notes saved ✓');
 }
 
 // ── Billing Export Column Selector ───────────────────────
@@ -5390,7 +5387,7 @@ function selectAllBillingCols(val){
 }
 
 function doExportBilling(){
-  updateBillingColSelection();
+  if(!_billingExportCols.length){toast('Please select at least one column','err');return;}
   if(_billingExportFormat==='csv') _doExportBillingCSV();
   else _doExportBillingPDF();
 }
@@ -5443,7 +5440,7 @@ function _doExportBillingPDF(){
   const colHeaders=_billingExportCols.map(i=>BILLING_COLS[i]);
   const tableRows=entries.map(e=>{
     const vals=_getBillingRowValues(e,monthLabel);
-    return `<tr style="${e.isDinner?'background:var(--surface)beb;':''}${e.isManual?'background:#e8f4fd;':''}">
+    return `<tr style="${e.isDinner?'background:#fffbeb;':''}${e.isManual?'background:#e8f4fd;':''}">
       ${vals.map((v,idx)=>`<td style="text-align:${idx>=colHeaders.length-2?'right':'left'}">${v}</td>`).join('')}
     </tr>`;
   }).join('');
@@ -5460,8 +5457,7 @@ function _doExportBillingPDF(){
   <tbody>${tableRows}<tr class="total-row"><td colspan="${colHeaders.length-1}" style="text-align:right;">GRAND TOTAL</td><td style="text-align:right;">₹${grand.toLocaleString('en-IN')}</td></tr></tbody>
   </table>
   <p style="margin-top:16px;font-size:11px;color:#666;">Generated on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})}</p>
-  
-<!-- CUSTOM CONFIRM MODAL -->
+  <!-- CUSTOM CONFIRM MODAL -->
 <div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div id="confirmModalMsg" style="font-size:16px;font-weight:600;margin-bottom:20px;line-height:1.4;"></div>
@@ -5475,13 +5471,14 @@ function _doExportBillingPDF(){
 <div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
-    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="text" placeholder="">
     <div style="display:flex;gap:10px;">
       <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>
     </div>
   </div>
 </div>
+
 
 </body></html>`;
 
@@ -5604,18 +5601,9 @@ function countSundaysInMonth(year, month){
 }
 
 function countLeavesTaken(staffId, month){
-  // Count days with no log entries in the month (excluding Sundays which are the entitlement)
-  // Simpler: count distinct dates in logs for this staff in this month
-  const [y,m]=month.split('-').map(Number);
-  const daysInMonth=new Date(y,m,0).getDate();
-  const logDates=new Set(S.logs.filter(l=>l.staffId==staffId&&l.date.startsWith(month)).map(l=>l.date));
-  let leaveDays=0;
-  for(let d=1;d<=daysInMonth;d++){
-    const dateStr=month+'-'+String(d).padStart(2,'0');
-    const dow=new Date(y,m-1,d).getDay();
-    if(dow!==0&&!logDates.has(dateStr)) leaveDays++;
-  }
-  return leaveDays;
+  // Count only days explicitly marked as paid leave by admin
+  const [y]=month.split('-').map(Number);
+  return (S.leaves[staffId]||[]).filter(l=>l.year===y&&l.date.startsWith(month)).length;
 }
 
 // ── Edit Attendance Log ───────────────────────────────────
@@ -5739,6 +5727,7 @@ function showStaffExportModal(){
         <input type="checkbox" id="srExpSummary" checked style="display:none;">
       </label>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="doExportStaffReport()">Download CSV</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:8px;" onclick="doExportStaffPDF()">📄 Download PDF</button>
     </div>`);
 }
 
@@ -5777,44 +5766,14 @@ function doExportStaffReport(){
   if(sfId!=='all') logs=logs.filter(l=>l.staffId==sfId);
   logs.sort((a,b)=>a.date.localeCompare(b.date));
   const rows=[_staffExportCols.map(i=>STAFF_REPORT_COLS[i])];
-  // Build date range
-  const dateRange=[];
-  let cur=new Date(from+'T00:00:00');
-  const endD=new Date(to+'T00:00:00');
-  while(cur<=endD){ dateRange.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
-  // Determine which staff to include
-  const exportStaffIds=sfId==='all'?S.staff.filter(s=>s.status==='active').map(s=>s.id):[parseInt(sfId)];
-  let rowNum=1;
-  exportStaffIds.forEach(sid=>{
-    const sf=getSf(sid)||{name:'Unknown',role:''};
-    dateRange.forEach(dateStr=>{
-      const dayLogs=logs.filter(l=>l.staffId==sid&&l.date===dateStr);
-      if(dayLogs.length===0){
-        // Absent
-        const dt=new Date(dateStr+'T00:00:00');
-        const allVals=[rowNum++,dateStr,dt.toLocaleDateString('en-IN',{weekday:'short'}),'','','','','','','','','Absent'];
-        // Add staff name as first if all staff export
-        if(sfId==='all'){
-          const nameCol=[sf.name,..._staffExportCols.map(i=>allVals[i])];
-          rows.push(nameCol);
-        } else {
-          rows.push(_staffExportCols.map(i=>allVals[i]));
-        }
-      } else {
-        dayLogs.forEach(l=>{
-          const d2=l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):null;
-          const dt=new Date(l.date+'T00:00:00');
-          const allVals=[rowNum++,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
-            (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
-            l.clientName||'',l.copyName||'',l.ciNotes||''];
-          if(sfId==='all'){
-            rows.push([sf.name,..._staffExportCols.map(i=>allVals[i])]);
-          } else {
-            rows.push(_staffExportCols.map(i=>allVals[i]));
-          }
-        });
-      }
-    });
+  logs.forEach((l,idx)=>{
+    const sf=getSf(l.staffId)||{name:'Unknown',role:''};
+    const d2=l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):null;
+    const dt=new Date(l.date+'T00:00:00');
+    const allVals=[idx+1,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
+      (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
+      l.clientName||'',l.copyName||'',l.ciNotes||''];
+    rows.push(_staffExportCols.map(i=>allVals[i]));
   });
   if(incSummary){
     const staffIds=sfId==='all'?[...new Set(logs.map(l=>l.staffId))]:[sfId];
@@ -5840,6 +5799,160 @@ function doExportStaffReport(){
   toast('Report exported ✓'); closeModal();
 }
 
+function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
+  var sfId, from, to, incSummary;
+  if(presetMonthAll!==undefined){
+    sfId='all';
+    var p0=presetMonthAll.split('-').map(Number);
+    from=presetMonthAll+'-01';
+    to=presetMonthAll+'-'+String(new Date(p0[0],p0[1],0).getDate()).padStart(2,'0');
+    incSummary=false;
+  } else if(presetSfId!==undefined){
+    sfId=presetSfId;
+    var p1=presetMonth.split('-').map(Number);
+    from=presetMonth+'-01';
+    to=presetMonth+'-'+String(new Date(p1[0],p1[1],0).getDate()).padStart(2,'0');
+    incSummary=false;
+  } else {
+    sfId=parseInt(($('srExpStaff')||{}).value||0)||'all';
+    from=($('srExpFrom')||{}).value||'';
+    to=($('srExpTo')||{}).value||'';
+    incSummary=false; // Leave summary removed per item 9
+  }
+  if(!from||!to){toast('Select date range','err');return;}
+  var logs=S.logs.filter(function(l){return l.date>=from&&l.date<=to;});
+  if(sfId!=='all') logs=logs.filter(function(l){return l.staffId==sfId;});
+  logs.sort(function(a,b){return a.date.localeCompare(b.date)||(a.checkIn||'').localeCompare(b.checkIn||'');});
+  var staffIds=sfId==='all'?[...new Set(logs.map(function(l){return l.staffId;}))]:[ isNaN(sfId)?sfId:parseInt(sfId) ];
+  var fmtD=function(ds){return new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
+  var fromFmt=fmtD(from), toFmt=fmtD(to);
+  var fromD=new Date(from+'T00:00:00'), toD=new Date(to+'T00:00:00');
+  var isSingleMonth=fromD.getMonth()===toD.getMonth()&&fromD.getFullYear()===toD.getFullYear();
+  var monthYearLabel=isSingleMonth
+    ?fromD.toLocaleDateString('en-IN',{month:'long',year:'numeric'})
+    :(fromFmt+' \u2013 '+toFmt);
+  var dutyLbl=function(c){return c==='grover'?'Grover A/V':c==='wedding'?'Wedding':'Office';};
+  var dutyClr=function(c){return c==='grover'?'#0d6efd':c==='wedding'?'#e83e8c':'#198754';};
+  function getDatesInRange(f,t){
+    var dates=[]; var cur=new Date(f+'T00:00:00'); var end=new Date(t+'T00:00:00');
+    while(cur<=end){dates.push(cur.toLocaleDateString('en-CA'));cur.setDate(cur.getDate()+1);}
+    return dates;
+  }
+  var allDates=getDatesInRange(from,to);
+  // Build filename (item 11)
+  var firstSf=staffIds.length===1?getSf(staffIds[0]):null;
+  var nameSlug=sfId==='all'?'AllStaff':(firstSf?firstSf.name.split(' ')[0]:'Staff');
+  var monthSlug=isSingleMonth?fromD.toLocaleDateString('en-IN',{month:'long',year:'numeric'}).replace(' ','')
+    :(String(fromD.getDate()).padStart(2,'0')+fromD.toLocaleDateString('en-IN',{month:'short'})+'_to_'+String(toD.getDate()).padStart(2,'0')+toD.toLocaleDateString('en-IN',{month:'short',year:'numeric'}).replace(' ',''));
+  var pdfFilename=nameSlug+'_'+monthSlug+'.pdf';
+  var pages='';
+  staffIds.forEach(function(id){
+    var sf=getSf(id); if(!sf) return;
+    var sfLogs=logs.filter(function(l){return l.staffId==id;});
+    var daysWorked=[...new Set(sfLogs.map(function(l){return l.date;}))].length;
+    var logsByDate={};
+    sfLogs.forEach(function(l){if(!logsByDate[l.date])logsByDate[l.date]=[];logsByDate[l.date].push(l);});
+    var hasCopy=sfLogs.some(function(l){return l.copyName&&l.copyName.trim();});
+    var hasClient=sfLogs.some(function(l){return l.clientName&&l.clientName.trim();});
+    var hasNotes=sfLogs.some(function(l){return l.ciNotes&&l.ciNotes.trim();});
+    var hasOffice=sfLogs.some(function(l){return l.company==='office';});
+    var extraCols=(hasClient?1:0)+(hasCopy?1:0)+(hasNotes?1:0)+(hasOffice?1:0);
+    var attRows='';
+    allDates.forEach(function(dateStr){
+      var dt=new Date(dateStr+'T00:00:00');
+      var day=dt.getDate();
+      var dayName=dt.toLocaleDateString('en-IN',{weekday:'short'});
+      var dateDisp=dayName+', '+String(day).padStart(2,'0')+' '+dt.toLocaleDateString('en-IN',{month:'short'});
+      var dayLogs=logsByDate[dateStr]||[];
+      var isUL=(S.uninformedLeaves[id]||[]).some(function(l){return l.date===dateStr;});
+      if(dayLogs.length===0){
+        var rowBg=isUL?'background:#fff3cd;':'background:#fff5f5;';
+        var statusTxt=isUL?'<span style="color:#856404;font-weight:700;">Uninformed Leave</span>':'<span style="color:#c0392b;font-weight:600;">Absent</span>';
+        attRows+='<tr style="'+rowBg+'">'
+          +'<td style="text-align:center;color:#888;font-size:11px;">'+String(day)+'</td>'
+          +'<td style="white-space:nowrap;">'+dateDisp+'</td>'
+          +'<td colspan="'+(4+extraCols)+'">'+statusTxt+'</td>'
+          +'</tr>';
+      } else {
+        dayLogs.forEach(function(l,li){
+          var serialNo=dayLogs.length===1?String(day):(String(day)+String.fromCharCode(65+li));
+          var dColor=dutyClr(l.company);
+          var ci=l.checkIn||'--', co=l.checkOut||'Active';
+          var isOffice=l.company==='office';
+          var durTxt='';
+          if(isOffice&&l.checkIn&&l.checkOut){var dm=dur(l.checkIn,l.checkOut);durTxt=dm?fmtDur(dm):'--';}
+          var rowBg=li%2===0?'':'background:#f9f9f9;';
+          // Copied By: name + phone (item 13)
+          var copyTxt=l.copyName?(l.copyName+(l.copyPhone?' \xB7 '+l.copyPhone:'')):'--';
+          attRows+='<tr style="'+rowBg+'">'
+            +'<td style="text-align:center;color:#666;font-size:11px;">'+serialNo+'</td>'
+            +'<td style="white-space:nowrap;">'+dateDisp+'</td>'
+            +'<td><span style="background:'+dColor+'20;color:'+dColor+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">'+dutyLbl(l.company)+'</span></td>'
+            +'<td>'+(l.venue||'--')+'</td>'
+            +'<td style="text-align:center;">'+ci+'</td>'
+            +'<td style="text-align:center;color:'+(co==='Active'?'#e67e22':'inherit')+';">'+co+'</td>'
+            +(hasOffice?'<td style="text-align:center;font-size:11px;">'+(isOffice?durTxt:'--')+'</td>':'')
+            +(hasClient?'<td style="font-size:11px;">'+(l.clientName||'--')+'</td>':'')
+            +(hasCopy?'<td style="font-size:11px;">'+copyTxt+'</td>':'')
+            +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.ciNotes||'--')+'</td>':'')
+            +'</tr>';
+        });
+      }
+    });
+    var clientTh=hasClient?'<th>Client</th>':'';
+    var copyTh=hasCopy?'<th>Copied By</th>':'';
+    var notesTh=hasNotes?'<th>Notes</th>':'';
+    var officeDurTh=hasOffice?'<th style="text-align:center;">Duration</th>':'';
+    var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    pages+='<div class="page">'
+      +'<div class="header"><div class="company-name">Fotovision Attendance Report</div><div class="period">'+monthYearLabel+'</div></div>'
+      +'<div class="staff-card">'
+        +'<div class="avatar" style="background:'+sf.color+';">'+ini(sf.name)+'</div>'
+        +'<div class="staff-info"><div class="staff-name">'+sf.name+'</div><div class="staff-role">'+(sf.role||'--')+'</div></div>'
+        +'<div class="stats">'
+          +'<div class="stat-box"><div class="stat-val">'+daysWorked+'</div><div class="stat-lbl">Days Worked</div></div>'
+          +'<div class="stat-box"><div class="stat-val">'+fromFmt+'</div><div class="stat-lbl">From</div></div>'
+          +'<div class="stat-box"><div class="stat-val">'+toFmt+'</div><div class="stat-lbl">To</div></div>'
+        +'</div>'
+      +'</div>'
+      +'<table><thead><tr>'
+        +'<th style="width:30px;">#</th>'
+        +'<th style="white-space:nowrap;">Date</th>'
+        +'<th>Duty</th><th>Venue</th>'
+        +'<th style="text-align:center;">Check-In</th>'
+        +'<th style="text-align:center;">Check-Out</th>'
+        +officeDurTh+clientTh+copyTh+notesTh
+      +'</tr></thead><tbody>'+attRows+'</tbody></table>'
+      +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
+      +'</div>';
+  });
+  if(!pages){toast('No data to export','err');return;}
+  var css='*{margin:0;padding:0;box-sizing:border-box;}'
+    +'body{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;color:#222;background:#fff;}'
+    +'.page{padding:28px 32px;page-break-after:always;min-height:100vh;display:flex;flex-direction:column;gap:18px;}'
+    +'.page:last-child{page-break-after:auto;}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a1a2e;padding-bottom:10px;}'
+    +'.company-name{font-size:20px;font-weight:800;color:#1a1a2e;letter-spacing:.5px;}'
+    +'.period{font-size:13px;color:#555;font-weight:600;}'
+    +'.staff-card{display:flex;align-items:center;gap:16px;background:#f8f9fe;border:1px solid #e0e4f0;border-radius:10px;padding:16px 20px;}'
+    +'.avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;}'
+    +'.staff-info{flex:1;}'
+    +'.staff-name{font-size:17px;font-weight:800;color:#1a1a2e;}'
+    +'.staff-role{font-size:12px;color:#666;margin-top:2px;}'
+    +'.stats{display:flex;gap:10px;}'
+    +'.stat-box{text-align:center;background:#fff;border:1px solid #e0e4f0;border-radius:8px;padding:8px 14px;min-width:70px;}'
+    +'.stat-val{font-size:14px;font-weight:800;color:#1a1a2e;}'
+    +'.stat-lbl{font-size:10px;color:#888;margin-top:2px;white-space:nowrap;}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px;}'
+    +'th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle;}'
+    +'tr:last-child td{border-bottom:none;}'
+    +'.footer{margin-top:auto;font-size:10px;color:#aaa;text-align:center;padding-top:12px;border-top:1px solid #eee;}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.page{padding:20px 24px;}}';
+  var fullHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+pdfFilename.replace('.pdf','')+'</title><style>'+css+'</style></head><body>'+pages+'</body></html>';
+  printAndSavePDF(fullHtml, pdfFilename);
+  if(presetSfId===undefined&&presetMonthAll===undefined) closeModal();
+}
 function markCandid(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
@@ -5903,7 +6016,7 @@ function savePaidLeavePolicy(){
 }
 
 // ===== STAFF LEAVES (Admin) =====
-async function openLeaveModal(sfId){
+function openLeaveModal(sfId){
   const sf=getSf(sfId); if(!sf) return;
   const yr=new Date().getFullYear();
   if(!S.leaves[sfId]) S.leaves[sfId]=[];
@@ -6283,15 +6396,12 @@ function buildSavePayload(){
 }
 function doFirebaseSave(toSave,attempt=0){
   if(attempt===0){
-    // Race Firebase write against a 15-second timeout
-    // If network is slow/hanging, Firebase promise may never resolve or reject
     const firebaseWrite=db.ref('appData').set(toSave);
     const timeout=new Promise((_,reject)=>
       setTimeout(()=>reject(new Error('Save timed out — poor network connection')),15000)
     );
     return Promise.race([firebaseWrite,timeout]).catch(e=>{
       console.error('Save error (attempt 0):',e.message);
-      // Start silent retries in background
       const _retry=(n)=>{
         if(n>5){ try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} return; }
         setTimeout(()=>{
@@ -6301,7 +6411,7 @@ function doFirebaseSave(toSave,attempt=0){
         }, Math.min(1000*Math.pow(2,n),15000));
       };
       _retry(1);
-      throw e; // re-throw so .catch() in callers fires
+      throw e;
     });
   } else {
     db.ref('appData').set(toSave)
@@ -6330,7 +6440,6 @@ function syncSelfiesAndCleanup(){
             // next refresh/refetch — previously this only lived in memory
             // and got silently overwritten by the next data sync.
             saveData();
-            // Refresh the visible log table so the thumbnail appears now
             const activeView=document.querySelector('.view.active');
             if(activeView){
               const vid=activeView.id.replace('view-','');
@@ -6351,7 +6460,7 @@ function syncSelfiesAndCleanup(){
 }
 function saveData(){
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{ // fast save - reduce conflict window
+  saveTimer = setTimeout(()=>{
     doFirebaseSave(buildSavePayload());
     syncSelfiesAndCleanup();
   }, 800);
@@ -6412,13 +6521,13 @@ function applyIncomingData(data){
     else if(vid==='staff') renderStaff();
     else if(vid==='logs') renderLogs();
     else if(vid==='reports') renderReports();
-    else if(vid==='staff-portal'&&S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
   }
 }
 // FIX: Mobile browsers (esp. iOS) can suspend the tab and silently drop the
 // Firebase realtime connection during long backgrounds (e.g. overnight).
-// Force a fresh fetch whenever the tab becomes visible/focused again, so
-// staff and admins always see current data immediately.
+// The live listener may not resync reliably on its own. So whenever the tab
+// becomes visible again, force a fresh one-time fetch to guarantee the admin
+// always sees current data the moment they look at the screen.
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible'&&S.currentUser){
     db.ref('appData').once('value').then(snap=>applyIncomingData(snap.val())).catch(()=>{});
@@ -6435,7 +6544,7 @@ function showLoadingScreen(msg){
   if(!el){
     el = document.createElement('div');
     el.id = 'fbLoadingScreen';
-    el.style.cssText = 'position:fixed;inset:0;background:var(--surface);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif;';
+    el.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif;';
     el.innerHTML = '<div style="width:48px;height:48px;border:4px solid #dbeafe;border-top-color:#0d6efd;border-radius:50%;animation:spin 1s linear infinite;"></div><div style="font-size:15px;color:#6c757d;" id="fbLoadingMsg">Loading...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
     document.body.appendChild(el);
   }
@@ -6476,11 +6585,12 @@ function init(){
       // Cleanup: remove ghost grover logs with no checkout from past dates
       if(data.logs){
         const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(Boolean).filter(l=>l&&!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
       }
+      // One-time cleanup: remove ghost logs (grover logs with no checkout older than today)
       if(data.logs){
         const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(Boolean).filter(l=>l&&!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
       }
       if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
@@ -6509,7 +6619,7 @@ function init(){
     }
   }).then(()=>{
     hideLoadingScreen();
-    if(!S.currentUser||S.currentUser.role==='admin') renderDash();
+        renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       applyIncomingData(snap.val());
@@ -6544,7 +6654,9 @@ function init(){
           if(ls) ls.style.display='none';
           const lb=$('logoutBtn');
           if(lb) lb.style.display='inline-flex';
-          document.body.classList.add('staff-mode');
+          // Staff user on admin page - redirect
+          window.location.href='./';
+          return;
           const tt=$('topbarTitle');
           if(tt) tt.textContent='Hi '+sf.name.split(' ')[0];
           document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -6564,8 +6676,6 @@ function init(){
     }
   }, 30000);
 }
-
-
 // Remember Me helpers — dual storage (localStorage + cookie backup)
 function fvSetRemember(data){
   try{ localStorage.setItem('fv_remember', JSON.stringify(data)); }catch(e){}
@@ -6632,21 +6742,23 @@ window.showConfirm = function(msg, okLabel='Delete'){
     $('confirmModal').style.display='flex';
   });
 };
-window.showPrompt = function(msg, defaultVal=''){
+window.showPrompt = function(msg, defaultVal='', inputType='text'){
   return new Promise(resolve=>{
     window._promptResolve=(val)=>{
       $('promptModal').style.display='none';
       resolve(val);
     };
     $('promptModalMsg').textContent=msg;
-    $('promptModalInput').value=defaultVal||'';
+    const inp=$('promptModalInput');
+    inp.type=inputType;
+    inp.placeholder=inputType==='number'?'Enter amount (₹)':'';
+    inp.value=defaultVal||'';
     $('promptModal').style.display='flex';
-    setTimeout(()=>$('promptModalInput').focus(),100);
+    setTimeout(()=>inp.focus(),100);
   });
 };
 init();
 </script>
-
 <!-- CUSTOM CONFIRM MODAL -->
 <div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
@@ -6661,11 +6773,22 @@ init();
 <div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
-    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="text" placeholder="">
     <div style="display:flex;gap:10px;">
       <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>
     </div>
+  </div>
+</div>
+
+<!-- Full-screen Firebase-confirmed success popup -->
+<div id="fvSuccessOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="background:#fff;border-radius:20px;padding:40px 48px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;gap:12px;max-width:320px;width:90%;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div id="fvSuccessTitle" style="font-size:22px;font-weight:800;color:#065f46;"></div>
+    <div id="fvSuccessMsg" style="font-size:14px;color:#6b7280;"></div>
   </div>
 </div>
 
