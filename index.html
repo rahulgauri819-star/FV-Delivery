@@ -181,7 +181,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v35';
+const APP_VERSION = 'v36';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -295,7 +295,14 @@ function earliestEventDate(w){
 }
 
 // ---------- progress calc ----------
+// Schema safety net: whenever WEDDING_TRACKS gains a key (like "pendrive" in v35) or a
+// wedding was saved under an older schema, w.tracks might be missing that key entirely.
+// Backfill any missing keys on the fly instead of crashing when something reads them.
+function ensureWeddingTracks(w){
+  WEDDING_TRACKS.forEach(t=>{ if(!w.tracks[t.key]) w.tracks[t.key]=newTrackObj(); });
+}
 function allTracksOf(w){
+  ensureWeddingTracks(w);
   let list=[];
   WEDDING_TRACKS.forEach(t=> list.push(w.tracks[t.key]));
   list.push(w.photoEditing.lightroom, w.photoEditing.photoshop);
@@ -421,6 +428,7 @@ function esc(str){
 function collectAssignedItems(personId){
   const items=[];
   WEDDINGS.forEach(w=>{
+    ensureWeddingTracks(w);
     if(w.photoEditing.lightroom.assignee===personId) items.push({w, label:'Lightroom — Photo Editing', track:w.photoEditing.lightroom, ref:{kind:'photoEditing', trackKey:'lightroom'}});
     if(w.photoEditing.photoshop.assignee===personId) items.push({w, label:'Photoshop — Photo Editing', track:w.photoEditing.photoshop, ref:{kind:'photoEditing', trackKey:'photoshop'}});
     VIDEO_EDITING_SINGLE.forEach(t=>{ if(w.videoEditing[t.key].assignee===personId) items.push({w, label:t.label+' — Video Editing', track:w.videoEditing[t.key], ref:{kind:'videoEditingSingle', trackKey:t.key}}); });
@@ -1505,7 +1513,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
   renderDmPersonDropdown, pickDmPerson,
   dmInlineHandle,
-  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount});
+  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks});
 
 render();
 </script>
@@ -1562,6 +1570,7 @@ render();
         window.EMPLOYEES.push(...employees);
         window.FREELANCERS.length = 0;
         window.FREELANCERS.push(...freelancers);
+        if(window.ensureWeddingTracks) window.WEDDINGS.forEach(w=>window.ensureWeddingTracks(w));
         if(data.ownerJSON && window.OWNER){
           const ownerData = JSON.parse(data.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
