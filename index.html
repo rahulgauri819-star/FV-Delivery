@@ -127,6 +127,17 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .stage-node.stuck .stage-count{color:var(--red);font-weight:600;}
 .stage-detail-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .stage-detail-head h3{font-size:15px;font-weight:800;}
+.trackcard{border-radius:12px;padding:16px 18px;margin-bottom:12px;border:1px solid var(--line);background:var(--card);transition:background .15s,border-color .15s;}
+.trackcard.is-done{background:var(--green-dim);border-color:var(--green);}
+.trackcard.is-not-done,.trackcard.is-delayed{background:var(--red-dim);border-color:var(--red);}
+.trackcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+.trackcard-title{font-weight:700;font-size:14.5px;}
+.trackcard-title .plat{color:var(--muted);font-weight:500;font-size:12px;}
+.trackcard-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;}
+.trackcard-field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.trackcard-field select{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--card);}
+.trackcard-link{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.trackcard-link input{flex:1;padding:8px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--card);}
 .track-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:8px;flex-wrap:wrap;}
 .track-row .tname{font-weight:600;font-size:13px;min-width:150px;flex:1;}
 .track-row .tmeta{font-size:11px;color:var(--muted);}
@@ -181,7 +192,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v36';
+const APP_VERSION = 'v37';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -201,8 +212,8 @@ let currentUser = null; // set after login
 
 
 
-const STATUS = ['not-started','in-progress','done'];
-const STATUS_LABEL = {'not-started':'Not Started','in-progress':'In Progress','done':'Done'};
+const STATUS = ['not-started','done'];
+const STATUS_LABEL = {'not-started':'Not Done','done':'Done'};
 const DATA_STATUS = ['pending','copied'];
 
 // ---------- Track definitions (all wedding-wide now) ----------
@@ -221,8 +232,8 @@ const WEDDING_TRACKS = [
 const VIDEO_EDITING_SINGLE = [
   {key:'teaser', label:'Teaser', platform:'Vimeo', skill:'teaser'},
   {key:'instacut', label:'Insta-cut', platform:'Vimeo', skill:'instacut'},
-  {key:'story', label:'Wedding Story', platform:'Vimeo', skill:'story'},
   {key:'reels', label:'Reels', platform:'Vimeo', skill:'reels'},
+  {key:'story', label:'Wedding Story', platform:'Vimeo', skill:'story'},
 ];
 
 function newTrackObj(defaultAssignee){
@@ -274,9 +285,13 @@ function next30DayOptions(selected){
   }
   return opts;
 }
+// Only used by Post-Production "Assign to..." dropdowns (Photo/Video Editing, wedding
+// tracks) — freelancers never do this kind of work at Fotovision, only event-day Still/
+// Cine coverage via the event team picker, so they're excluded here entirely.
 function eligiblePeopleFor(skillKey){
-  if(!skillKey) return getAllPeople();
-  return getAllPeople().filter(p=> p.type==="freelancer" || (p.skills||[]).includes(skillKey));
+  const staff=EMPLOYEES;
+  if(!skillKey) return staff;
+  return staff.filter(p=> (p.skills||[]).includes(skillKey));
 }
 function isSunday(dateStr){ return dateStr && new Date(dateStr+'T00:00:00').getDay()===0; }
 function shiftDateSkippingSunday(dateStr, days){
@@ -980,8 +995,12 @@ function renderStageDetail(w){
   const current = stages.find(s=>s.key===expandedStage) || stages[0];
   let body='';
   if(current.key==='photoEditing'){
-    body = renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true) + renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false)
-      + WEDDING_TRACKS.filter(t=>PHOTO_EDIT_WEDDING_KEYS.includes(t.key)).map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('');
+    const allPhotosTrack = WEDDING_TRACKS.find(t=>t.key==='allPhotos');
+    const albumDesignTrack = WEDDING_TRACKS.find(t=>t.key==='albumDesign');
+    body = renderTrackRow(w.id, allPhotosTrack, w.tracks.allPhotos, {kind:'wedding', trackKey:'allPhotos'})
+      + renderPhotoEditingRow(w, 'lightroom', 'Lightroom', false)
+      + renderPhotoEditingRow(w, 'photoshop', 'Photoshop', true)
+      + renderTrackRow(w.id, albumDesignTrack, w.tracks.albumDesign, {kind:'wedding', trackKey:'albumDesign'});
   } else if(current.key==='videoEditing'){
     body = VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('') + renderFullVideoBox(w);
   } else {
@@ -1025,33 +1044,51 @@ function toggleEventCard(eventId){
   chev.classList.toggle('open');
 }
 
-// ---------- Photo Editing (Lightroom -> Photoshop, sequential) ----------
+// ---------- Shared "Option A" track card shell ----------
+// Whole card is green when Done, red when Not Done (Delayed is a red card too, but keeps
+// its own "Delayed" badge text so that signal isn't lost). Fields run Assigned To / Start
+// / Due / Status, with Status anchored on the far right per Rahul's spec.
+function trackCard(title, subtitle, track, delayed, fieldsHtml, linkHtml){
+  const cls = delayed ? 'is-delayed' : (track.status==='done' ? 'is-done' : 'is-not-done');
+  const badgeText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
+  const badgeCls = delayed ? 'delayed' : track.status;
+  return `
+    <div class="trackcard ${cls}">
+      <div class="trackcard-top">
+        <div class="trackcard-title">${title}${subtitle?` <span class="plat">${subtitle}</span>`:''}</div>
+        <span class="pill ${badgeCls}">${badgeText}</span>
+      </div>
+      <div class="trackcard-fields">${fieldsHtml}</div>
+      ${linkHtml||''}
+    </div>
+  `;
+}
+function trackField(labelText, innerHtml){
+  return `<div class="trackcard-field"><label>${labelText}</label>${innerHtml}</div>`;
+}
+
+// ---------- Photo Editing (All Photographs -> Lightroom -> Photoshop -> Album Design) ----------
 function renderPhotoEditingRow(w, subKey, label, hasLink){
   const track = w.photoEditing[subKey];
   const delayed = isDelayed(track);
-  const statusCls = delayed ? 'delayed' : track.status;
-  const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
-  return `
-    <div class="track-row">
-      <span class="pill ${statusCls}">${statusText}</span>
-      <span class="tname">${label}${hasLink?' <span class="tmeta">(FotoOwl)</span>':''}</span>
-      <select onchange="updatePhotoEditing('${w.id}','${subKey}','status',this.value)">
-        ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
-      </select>
-      <select onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
-        <option value="">Assign to...</option>
-        ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
-      </select>
-      <select onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
-        ${next30DayOptions(track.start)}
-      </select>
-      <select onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)" title="Due Date">
-        ${next30DayOptions(track.due)}
-      </select>
-      ${hasLink?`<input type="text" placeholder="paste FotoOwl link" value="${esc(track.link)}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
-      ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
-    </div>
-  `;
+  const assigneeField = trackField('Assigned To', `
+    <select onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
+      <option value="">Assign to...</option>
+      ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+    </select>
+  `);
+  const startField = trackField('Start', `<select onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)">${next30DayOptions(track.start)}</select>`);
+  const dueField = trackField('Due', `<select onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)">${next30DayOptions(track.due)}</select>`);
+  const statusField = trackField('Status', `
+    <select onchange="updatePhotoEditing('${w.id}','${subKey}','status',this.value)">
+      ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+    </select>
+  `);
+  const linkHtml = hasLink ? `
+    <div class="trackcard-link">🔗 <input type="text" placeholder="paste FotoOwl link" value="${esc(track.link)}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
+    ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}</div>
+  ` : '';
+  return trackCard(label, hasLink?'(FotoOwl)':'', track, delayed, assigneeField+startField+dueField+statusField, linkHtml);
 }
 function updatePhotoEditing(weddingId, subKey, field, value){
   const w=WEDDINGS.find(x=>x.id===weddingId);
@@ -1062,64 +1099,58 @@ function updatePhotoEditing(weddingId, subKey, field, value){
 // ---------- Generic wedding-wide / video-editing tracks ----------
 function renderTrackRow(weddingId, trackDef, track, ref){
   const delayed = isDelayed(track);
-  const statusCls = delayed ? 'delayed' : track.status;
-  const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
   const refStr = encodeURIComponent(JSON.stringify(ref));
-  return `
-    <div class="track-row">
-      <span class="pill ${statusCls}">${statusText}</span>
-      <span class="tname">${trackDef.label}${trackDef.platform?` <span class="tmeta">(${trackDef.platform})</span>`:''}</span>
-      <select onchange="updateTrack('${weddingId}','${refStr}','status',this.value)">
-        ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
-      </select>
-      <select onchange="updateTrack('${weddingId}','${refStr}','assignee',this.value)">
-        <option value="">Assign to...</option>
-        ${eligiblePeopleFor(trackDef.skill).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
-      </select>
-      <select onchange="updateTrack('${weddingId}','${refStr}','start',this.value)" title="Start Date">
-        ${next30DayOptions(track.start)}
-      </select>
-      <select onchange="updateTrack('${weddingId}','${refStr}','due',this.value)" title="Due Date">
-        ${next30DayOptions(track.due)}
-      </select>
-      <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
-      ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}
-    </div>
+  const assigneeField = trackField('Assigned To', `
+    <select onchange="updateTrack('${weddingId}','${refStr}','assignee',this.value)">
+      <option value="">Assign to...</option>
+      ${eligiblePeopleFor(trackDef.skill).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+    </select>
+  `);
+  const startField = trackField('Start', `<select onchange="updateTrack('${weddingId}','${refStr}','start',this.value)">${next30DayOptions(track.start)}</select>`);
+  const dueField = trackField('Due', `<select onchange="updateTrack('${weddingId}','${refStr}','due',this.value)">${next30DayOptions(track.due)}</select>`);
+  const statusField = trackField('Status', `
+    <select onchange="updateTrack('${weddingId}','${refStr}','status',this.value)">
+      ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+    </select>
+  `);
+  const linkHtml = `
+    <div class="trackcard-link">🔗 <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
+    ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}</div>
   `;
+  return trackCard(trackDef.label, trackDef.platform?`(${trackDef.platform})`:'', track, delayed, assigneeField+startField+dueField+statusField, linkHtml);
 }
 // ---------- Full Event Video: one box, all events listed inside ----------
 function renderFullVideoBox(w){
   if(!w.events.length) return emptyState('Add events first');
   return `
     <div class="fev-box">
-      <div class="track-group-title" style="margin-bottom:2px;">Full Event Video <span class="tmeta">(Google Drive)</span></div>
+      <div class="track-group-title" style="margin-bottom:10px;">Full Event Video <span class="tmeta">(Google Drive)</span></div>
       ${w.events.map(ev=>{
         const track=w.videoEditing.fullVideo[ev.id];
         const delayed=isDelayed(track);
-        const statusCls = delayed ? 'delayed' : track.status;
-        const statusText = delayed ? 'Delayed' : STATUS_LABEL[track.status];
         const ref=encodeURIComponent(JSON.stringify({kind:'fullVideo', eventId:ev.id}));
-        return `
-          <div class="fev-row">
-            <span class="pill ${statusCls}">${statusText}</span>
-            <span class="tname">${esc(ev.name)}</span>
-            <select onchange="updateTrack('${w.id}','${ref}','status',this.value)">
-              ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
-            </select>
-            <select onchange="updateTrack('${w.id}','${ref}','assignee',this.value)">
-              <option value="">Assign to...</option>
-              ${eligiblePeopleFor('fullVideo').map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
-            </select>
-            <select onchange="updateTrack('${w.id}','${ref}','start',this.value)" title="Start Date">${next30DayOptions(track.start)}</select>
-            <select onchange="updateTrack('${w.id}','${ref}','due',this.value)" title="Due Date">${next30DayOptions(track.due)}</select>
-            <select onchange="updateTrack('${w.id}','${ref}','renderStatus',this.value)" title="Render Status">
-              <option value="">Render status...</option>
-              <option value="rendering" ${track.renderStatus==='rendering'?'selected':''}>In Rendering</option>
-              <option value="rendered" ${track.renderStatus==='rendered'?'selected':''}>Video Rendered</option>
-            </select>
-            <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${w.id}','${ref}','link',this.value)">
-          </div>
-        `;
+        const assigneeField = trackField('Assigned To', `
+          <select onchange="updateTrack('${w.id}','${ref}','assignee',this.value)">
+            <option value="">Assign to...</option>
+            ${eligiblePeopleFor('fullVideo').map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+          </select>
+        `);
+        const startField = trackField('Start', `<select onchange="updateTrack('${w.id}','${ref}','start',this.value)">${next30DayOptions(track.start)}</select>`);
+        const dueField = trackField('Due', `<select onchange="updateTrack('${w.id}','${ref}','due',this.value)">${next30DayOptions(track.due)}</select>`);
+        const renderField = trackField('Render Status', `
+          <select onchange="updateTrack('${w.id}','${ref}','renderStatus',this.value)">
+            <option value="">Render status...</option>
+            <option value="rendering" ${track.renderStatus==='rendering'?'selected':''}>In Rendering</option>
+            <option value="rendered" ${track.renderStatus==='rendered'?'selected':''}>Video Rendered</option>
+          </select>
+        `);
+        const statusField = trackField('Status', `
+          <select onchange="updateTrack('${w.id}','${ref}','status',this.value)">
+            ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+          </select>
+        `);
+        const linkHtml = `<div class="trackcard-link">🔗 <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${w.id}','${ref}','link',this.value)"></div>`;
+        return trackCard(esc(ev.name), '', track, delayed, assigneeField+startField+dueField+renderField+statusField, linkHtml);
       }).join('')}
     </div>
   `;
