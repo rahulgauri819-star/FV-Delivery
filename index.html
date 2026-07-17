@@ -166,7 +166,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v27';
+const APP_VERSION = 'v28';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -883,12 +883,7 @@ function renderWeddingDetail(id){
     </div>
 
     <section class="block">
-      <h2>Events &amp; Teams <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
-      ${w.events.map(ev=>renderEventCard(w.id, ev)).join('') || emptyState('No events yet. Add Mehendi, Sangeet, Wedding, Reception etc.')}
-    </section>
-
-    <section class="block">
-      <h2>Data Management</h2>
+      <h2>Data Management <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
       ${renderDataManagement(w)}
     </section>
 
