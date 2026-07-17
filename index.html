@@ -127,17 +127,17 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .stage-node.stuck .stage-count{color:var(--red);font-weight:600;}
 .stage-detail-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .stage-detail-head h3{font-size:15px;font-weight:800;}
-.trackcard{border-radius:12px;padding:16px 18px;margin-bottom:12px;border:1px solid var(--line);background:var(--card);transition:background .15s,border-color .15s;}
+.trackcard{border-radius:9px;padding:10px 14px;margin-bottom:8px;border:1px solid var(--line);background:var(--card);transition:background .15s,border-color .15s;}
 .trackcard.is-done{background:var(--green-dim);border-color:var(--green);}
 .trackcard.is-not-done,.trackcard.is-delayed{background:var(--red-dim);border-color:var(--red);}
-.trackcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
-.trackcard-title{font-weight:700;font-size:14.5px;}
-.trackcard-title .plat{color:var(--muted);font-weight:500;font-size:12px;}
-.trackcard-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;}
-.trackcard-field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
-.trackcard-field select{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--card);}
-.trackcard-link{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
-.trackcard-link input{flex:1;padding:8px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--card);}
+.trackcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
+.trackcard-title{font-weight:700;font-size:13px;}
+.trackcard-title .plat{color:var(--muted);font-weight:500;font-size:11px;}
+.trackcard-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-bottom:6px;}
+.trackcard-field label{display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+.trackcard-field select{width:100%;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;background:var(--card);}
+.trackcard-link{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);}
+.trackcard-link input{flex:1;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;background:var(--card);}
 .track-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:8px;flex-wrap:wrap;}
 .track-row .tname{font-weight:600;font-size:13px;min-width:150px;flex:1;}
 .track-row .tmeta{font-size:11px;color:var(--muted);}
@@ -192,7 +192,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v37';
+const APP_VERSION = 'v38';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -323,6 +323,10 @@ function allTracksOf(w){
   list.push(w.photoEditing.lightroom, w.photoEditing.photoshop);
   VIDEO_EDITING_SINGLE.forEach(t=> list.push(w.videoEditing[t.key]));
   w.events.forEach(ev=> list.push(w.videoEditing.fullVideo[ev.id]));
+  // Schema safety net: any status value that isn't "done" (e.g. a leftover "in-progress"
+  // from before the 2-state migration) normalizes to "not-started" instead of rendering
+  // as "undefined" — STATUS_LABEL only knows about the current 2-state system.
+  list.forEach(t=>{ if(t.status!=='done') t.status='not-started'; });
   return list;
 }
 function progressOf(w){
@@ -517,7 +521,14 @@ function renderScheduleFor(personId, actingUserId){
     if(canAssignInline){
       content += `
         <span class="ledger-inline-assign">
-          <input list="clientNamesList" id="cli_${iso}" class="ledger-mini-select" placeholder="Client..." onchange="dmInlineHandle('${personId}','${iso}')">
+          <span style="position:relative;display:inline-block;">
+            <input id="cli_${iso}" data-person="${personId}" class="ledger-mini-select" placeholder="Client..." autocomplete="off"
+              oninput="renderClientDropdown('${iso}')"
+              onfocus="renderClientDropdown('${iso}')"
+              onblur="setTimeout(()=>{const d=document.getElementById('clientDropdown_${iso}'); if(d) d.style.display='none';},150)"
+              onchange="dmInlineHandle('${personId}','${iso}')">
+            <div id="clientDropdown_${iso}" class="person-dropdown"></div>
+          </span>
           <select id="duty_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
             <option value="">Work Done...</option>
             ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
@@ -531,6 +542,28 @@ function renderScheduleFor(personId, actingUserId){
     html+=`<div class="ledger-row${sunday?' holiday':''}"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">${content}</span></div>`;
   }
   return `<section class="block"><h2>${actingUserId?'My Schedule':'Schedule'}</h2>${html}</section>`;
+}
+// Real clickable dropdown for the Client field (was browser-native datalist, which only
+// showed suggestions while typing and had no "browse everyone" affordance) — click to
+// open, filters as you type, typing a brand-new name still works via dmInlineHandle.
+function renderClientDropdown(iso){
+  const box=document.getElementById('clientDropdown_'+iso);
+  const inp=document.getElementById('cli_'+iso);
+  if(!box||!inp) return;
+  const q=inp.value.trim().toLowerCase();
+  const options=WEDDINGS.filter(w=>w.client.toLowerCase().includes(q));
+  box.innerHTML = options.length
+    ? options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();selectClientOption('${iso}','${w.id}')">${esc(w.client)}</div>`).join('')
+    : `<div class="person-dropdown-empty">No match — this will create a new client "${esc(inp.value.trim())}"</div>`;
+  box.style.display='block';
+}
+function selectClientOption(iso, weddingId){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const inp=document.getElementById('cli_'+iso);
+  if(!w||!inp) return;
+  inp.value=w.client;
+  document.getElementById('clientDropdown_'+iso).style.display='none';
+  dmInlineHandle(inp.dataset.person, iso);
 }
 function dmInlineHandle(personId, dateIso){
   const cliEl=document.getElementById('cli_'+dateIso);
@@ -1542,9 +1575,9 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
-  renderDmPersonDropdown, pickDmPerson,
+  renderDmPersonDropdown, pickDmPerson, renderClientDropdown, selectClientOption,
   dmInlineHandle,
-  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks});
+  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
 
 render();
 </script>
@@ -1602,6 +1635,7 @@ render();
         window.FREELANCERS.length = 0;
         window.FREELANCERS.push(...freelancers);
         if(window.ensureWeddingTracks) window.WEDDINGS.forEach(w=>window.ensureWeddingTracks(w));
+        if(window.allTracksOf) window.WEDDINGS.forEach(w=>window.allTracksOf(w));
         if(data.ownerJSON && window.OWNER){
           const ownerData = JSON.parse(data.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
