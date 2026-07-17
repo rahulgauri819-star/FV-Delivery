@@ -181,7 +181,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v34';
+const APP_VERSION = 'v35';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -206,15 +206,16 @@ const STATUS_LABEL = {'not-started':'Not Started','in-progress':'In Progress','d
 const DATA_STATUS = ['pending','copied'];
 
 // ---------- Track definitions (all wedding-wide now) ----------
+// Grouping for Post-Production's 3 stage circles: allPhotos + albumDesign live here but
+// are grouped under "Photo Editing" in stageCategories(); photoFrames + videoBook +
+// pendrive are grouped under "Delivery Works". albumUpload/printing/delivery/deliveryDone
+// were dropped entirely per Rahul's request — no longer tracked anywhere.
 const WEDDING_TRACKS = [
   {key:'allPhotos', label:'All Photographs (watermarked, low-res)', platform:'Google Drive'},
+  {key:'albumDesign', label:'Album Design', platform:''},
   {key:'photoFrames', label:'Photo Frames', platform:''},
   {key:'videoBook', label:'Video Book', platform:'', skill:'videoBook'},
-  {key:'albumDesign', label:'Album Design', platform:''},
-  {key:'albumUpload', label:'Album Upload', platform:'Google Drive'},
-  {key:'printing', label:'Album Printing', platform:''},
-  {key:'delivery', label:'Delivery to Client', platform:''},
-  {key:'deliveryDone', label:'Delivery Done', platform:''},
+  {key:'pendrive', label:'Pendrive', platform:''},
 ];
 // Video Editing sub-items (wedding-wide, single assignee each)
 const VIDEO_EDITING_SINGLE = [
@@ -244,10 +245,9 @@ function newDataManagementObj(events){
   return {hardDisks:[], events:{}}; // events[id].still/video = [{pid,status,dataSize}], lazy-initialized from event team
 }
 function weddingWideTracks(w){
-  return {
-    allPhotos:newTrackObj(), photoFrames:newTrackObj(), videoBook:newTrackObj(),
-    albumDesign:newTrackObj(), albumUpload:newTrackObj(), printing:newTrackObj(), delivery:newTrackObj(), deliveryDone:newTrackObj()
-  };
+  const obj={};
+  WEDDING_TRACKS.forEach(t=> obj[t.key]=newTrackObj());
+  return obj;
 }
 
 // ---------- Weddings (starts empty) ----------
@@ -928,20 +928,22 @@ function renderWeddingDetail(id){
   `;
 }
 // ---------- Post-Production as parallel stages (Option E) — no connecting lines/sequence
-// implied, since Photo Editing / Video Editing / Album & Delivery all run at the same time
+// implied, since Photo Editing / Video Editing / Delivery Works all run at the same time
 // at Fotovision, not one after another. Each bead is its own independent status; clicking
-// one expands its tasks below. Categories mirror the track-groups that already existed.
+// one expands its tasks below.
+const PHOTO_EDIT_WEDDING_KEYS=['allPhotos','albumDesign'];
+const DELIVERY_WORKS_KEYS=['photoFrames','videoBook','pendrive'];
 function stageCategories(w){
-  const photoTracks=[w.photoEditing.lightroom, w.photoEditing.photoshop];
+  const photoTracks=[w.photoEditing.lightroom, w.photoEditing.photoshop, ...PHOTO_EDIT_WEDDING_KEYS.map(k=>w.tracks[k])];
   const videoTracks=[...VIDEO_EDITING_SINGLE.map(t=>w.videoEditing[t.key]), ...w.events.map(ev=>w.videoEditing.fullVideo[ev.id])];
-  const albumTracks=WEDDING_TRACKS.map(t=>w.tracks[t.key]);
+  const deliveryTracks=DELIVERY_WORKS_KEYS.map(k=>w.tracks[k]);
   function summarize(list){
     return {done:list.filter(t=>t.status==='done').length, total:list.length, stuck:list.some(isDelayed)};
   }
   return [
     {key:'photoEditing', label:'Photo Edit', ...summarize(photoTracks)},
     {key:'videoEditing', label:'Video Edit', ...summarize(videoTracks)},
-    {key:'albumDelivery', label:'Album &amp; Delivery', ...summarize(albumTracks)},
+    {key:'deliveryWorks', label:'Delivery Works', ...summarize(deliveryTracks)},
   ];
 }
 let expandedStage=null;
@@ -970,16 +972,17 @@ function renderStageDetail(w){
   const current = stages.find(s=>s.key===expandedStage) || stages[0];
   let body='';
   if(current.key==='photoEditing'){
-    body = renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true) + renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false);
+    body = renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true) + renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false)
+      + WEDDING_TRACKS.filter(t=>PHOTO_EDIT_WEDDING_KEYS.includes(t.key)).map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('');
   } else if(current.key==='videoEditing'){
     body = VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('') + renderFullVideoBox(w);
   } else {
-    body = WEDDING_TRACKS.map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('');
+    body = WEDDING_TRACKS.filter(t=>DELIVERY_WORKS_KEYS.includes(t.key)).map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('');
   }
   return `
     <div class="card stage-detail">
       <div class="stage-detail-head">
-        <h3>${current.label.replace('&amp;','and')}</h3>
+        <h3>${current.label}</h3>
         ${current.stuck?`<span class="pill delayed">${current.total-current.done} Delayed</span>`:''}
       </div>
       ${body}
