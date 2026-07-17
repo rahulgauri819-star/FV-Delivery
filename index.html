@@ -153,7 +153,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v25';
+const APP_VERSION = 'v26';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -225,8 +225,9 @@ let WEDDINGS = [];
 let currentTab='dashboard';
 let currentWeddingId=null;
 
-function genId(){ return 'w'+Math.random().toString(36).slice(2,9); }
-function genEventId(){ return 'ev'+Math.random().toString(36).slice(2,9); }
+let __idCounter=0;
+function genId(){ return 'w'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
+function genEventId(){ return 'ev'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
 function fmtDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
 function next30DayOptions(selected){
   let opts = `<option value="">—</option>`;
@@ -271,7 +272,7 @@ function progressOf(w){
   return {done, total:list.length, pct: list.length? Math.round(done/list.length*100):0};
 }
 function isDelayed(t){
-  if(!t.due || t.status==='done') return false;
+  if(!t.due || !t.assignee || t.status==='done') return false;
   return new Date(t.due) < new Date(new Date().toDateString());
 }
 
@@ -362,31 +363,45 @@ function renderTab(){
 }
 
 // ---------- My Tasks / Assign Work (date ledger, shared between staff self-view and owner/manager staff-wise view) ----------
+// Escape text before dropping it into HTML/attributes — client names, event names, notes etc. are
+// free-text user input and must never be interpolated raw (breaks onclick="" attrs on apostrophes,
+// and is a stored-XSS risk otherwise).
+function esc(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Each item carries a stable `ref` (kind + key, matching getTrackByRef) so callers never have to
+// match on the human-readable label string, which can collide (duplicate event names) or contain
+// characters (apostrophes, quotes) that break inline onclick="" handlers.
 function collectAssignedItems(personId){
   const items=[];
   WEDDINGS.forEach(w=>{
-    if(w.photoEditing.lightroom.assignee===personId) items.push({w, label:'Lightroom — Photo Editing', track:w.photoEditing.lightroom});
-    if(w.photoEditing.photoshop.assignee===personId) items.push({w, label:'Photoshop — Photo Editing', track:w.photoEditing.photoshop});
-    VIDEO_EDITING_SINGLE.forEach(t=>{ if(w.videoEditing[t.key].assignee===personId) items.push({w, label:t.label+' — Video Editing', track:w.videoEditing[t.key]}); });
-    w.events.forEach(ev=>{ if(w.videoEditing.fullVideo[ev.id].assignee===personId) items.push({w, label:ev.name+' — Full Video', track:w.videoEditing.fullVideo[ev.id]}); });
-    WEDDING_TRACKS.forEach(t=>{ if(w.tracks[t.key].assignee===personId) items.push({w, label:t.label, track:w.tracks[t.key]}); });
+    if(w.photoEditing.lightroom.assignee===personId) items.push({w, label:'Lightroom — Photo Editing', track:w.photoEditing.lightroom, ref:{kind:'photoEditing', trackKey:'lightroom'}});
+    if(w.photoEditing.photoshop.assignee===personId) items.push({w, label:'Photoshop — Photo Editing', track:w.photoEditing.photoshop, ref:{kind:'photoEditing', trackKey:'photoshop'}});
+    VIDEO_EDITING_SINGLE.forEach(t=>{ if(w.videoEditing[t.key].assignee===personId) items.push({w, label:t.label+' — Video Editing', track:w.videoEditing[t.key], ref:{kind:'videoEditingSingle', trackKey:t.key}}); });
+    w.events.forEach(ev=>{ if(w.videoEditing.fullVideo[ev.id].assignee===personId) items.push({w, label:ev.name+' — Full Video', track:w.videoEditing.fullVideo[ev.id], ref:{kind:'fullVideo', eventId:ev.id}}); });
+    WEDDING_TRACKS.forEach(t=>{ if(w.tracks[t.key].assignee===personId) items.push({w, label:t.label, track:w.tracks[t.key], ref:{kind:'wedding', trackKey:t.key}}); });
   });
   return items;
 }
-function shiftFutureTasks(personId, afterDate, days){
-  collectAssignedItems(personId).forEach(item=>{
+// Scoped to a single wedding — shifting a delayed task should never silently reschedule a person's
+// work on other, unrelated weddings.
+function shiftFutureTasks(personId, weddingId, afterDate, days){
+  collectAssignedItems(personId).filter(i=>i.w.id===weddingId).forEach(item=>{
     if(item.track.due && item.track.due > afterDate) item.track.due = shiftDateSkippingSunday(item.track.due, days);
     if(item.track.start && item.track.start > afterDate) item.track.start = shiftDateSkippingSunday(item.track.start, days);
   });
 }
-function promptShiftSchedule(personId, weddingId, label){
-  const daysStr = prompt("How many days delayed? This shifts this person's other upcoming tasks forward by this many days (Sundays are skipped).", '1');
+function promptShiftSchedule(personId, weddingId, refStr){
+  const daysStr = prompt("How many days delayed? This shifts this person's other upcoming tasks on this wedding forward by this many days (Sundays are skipped).", '1');
   const days = parseInt(daysStr,10);
   if(!days || days<1) return;
-  const items = collectAssignedItems(personId).filter(i=>i.w.id===weddingId && i.label===label);
-  if(!items.length) return;
-  const afterDate = items[0].track.due || new Date().toISOString().slice(0,10);
-  shiftFutureTasks(personId, afterDate, days);
+  const ref=JSON.parse(decodeURIComponent(refStr));
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  if(!w) return;
+  const track=getTrackByRef(w, ref);
+  if(!track) return;
+  const afterDate = track.due || new Date().toISOString().slice(0,10);
+  shiftFutureTasks(personId, weddingId, afterDate, days);
   renderTab();
 }
 function renderMyTasks(){ return renderScheduleFor(currentUser.id, currentUser.id); }
@@ -417,14 +432,15 @@ function renderScheduleFor(personId, actingUserId){
         const delayed=isDelayed(item.track);
         const statusCls=delayed?'delayed':item.track.status;
         const statusText=delayed?'Delayed':STATUS_LABEL[item.track.status];
+        const refStr=encodeURIComponent(JSON.stringify(item.ref));
         return `<span class="ledger-task">
           <span class="pill ${statusCls}">${statusText}</span>
-          <span class="tname">${item.label} <span class="tmeta">— ${item.w.client}</span></span>
-          <select onchange="updateMyTask('${personId}','${item.w.id}','${item.label}',this.value)">
+          <span class="tname">${esc(item.label)} <span class="tmeta">— ${esc(item.w.client)}</span></span>
+          <select onchange="updateMyTask('${personId}','${item.w.id}','${refStr}',this.value)">
             ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
           </select>
-          ${item.track.notes?`<span class="tmeta" title="${item.track.notes}">📝 ${item.track.notes}</span>`:''}
-          ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${item.label}')">Shift Future Work</button>`:''}
+          ${item.track.notes?`<span class="tmeta" title="${esc(item.track.notes)}">📝 ${esc(item.track.notes)}</span>`:''}
+          ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${refStr}')">Shift Future Work</button>`:''}
         </span>`;
       }).join('');
     } else if(!canAssignInline){
@@ -435,7 +451,7 @@ function renderScheduleFor(personId, actingUserId){
         <span class="ledger-inline-assign">
           <select id="cli_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
             <option value="">Client...</option>
-            ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+            ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
           </select>
           <select id="duty_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
             <option value="">Duty...</option>
@@ -471,7 +487,7 @@ function dmInlineHandle(personId, dateIso){
   // show/populate event picker only when Full Event Video is the chosen duty
   if(duty==='fullVideo' && cli){
     const w=WEDDINGS.find(x=>x.id===cli);
-    evEl.innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    evEl.innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
     evEl.style.display='inline-block';
   } else {
     evEl.style.display='none';
@@ -490,9 +506,12 @@ function dmInlineHandle(personId, dateIso){
   assignTrackForPerson(cli, duty, eventId, personId, start, due||dateIso, link, status, notes);
   renderTab();
 }
-function updateMyTask(personId, weddingId, label, value){
-  const items=collectAssignedItems(personId).filter(i=>i.w.id===weddingId && i.label===label);
-  if(items.length) items[0].track.status=value;
+function updateMyTask(personId, weddingId, refStr, value){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  if(!w) return;
+  const ref=JSON.parse(decodeURIComponent(refStr));
+  const track=getTrackByRef(w, ref);
+  if(track) track.status=value;
   renderTab();
 }
 
@@ -504,7 +523,7 @@ function renderAssignWork(){
   if(assignWorkStaffId){
     const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId);
     return `<span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
-      <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${p.name} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${p.title}</span></h2>
+      <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${esc(p.name)} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${esc(p.title)}</span></h2>
       ${renderScheduleFor(p.id, null)}`;
   }
   return `
@@ -514,7 +533,7 @@ function renderAssignWork(){
         const count=collectAssignedItems(p.id).filter(i=>i.track.status!=='done').length;
         return `
         <div class="wedding-row" onclick="openAssignWorkStaff('${p.id}')">
-          <div class="info"><div class="client">${p.name}</div><div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div></div>
+          <div class="info"><div class="client">${esc(p.name)}</div><div class="meta">${esc(p.title)} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div></div>
           <span class="progress-mini">${count} active task${count===1?'':'s'}</span>
         </div>`;
       }).join('')}
@@ -546,7 +565,7 @@ function renderAssignNewWorkForm(personId){
       <div class="field"><label>Client (Wedding)</label>
         <select id="f_awWedding" onchange="toggleAwEventField()">
           <option value="">Select client...</option>
-          ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+          ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
         </select>
       </div>
       <div class="field"><label>Duty</label>
@@ -579,7 +598,7 @@ function toggleAwEventField(){
   const wrap=document.getElementById('f_awEventWrap');
   if(duty==='fullVideo' && weddingId){
     const w=WEDDINGS.find(x=>x.id===weddingId);
-    document.getElementById('f_awEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    document.getElementById('f_awEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
     wrap.style.display='block';
   } else {
     wrap.style.display='none';
@@ -630,7 +649,7 @@ function openAssignForDate(personId, dateIso){
     <div class="field"><label>Client (Wedding)</label>
       <select id="f_dmAwWedding" onchange="toggleDmAwEventField()">
         <option value="">Select client...</option>
-        ${WEDDINGS.map(w=>`<option value="${w.id}">${w.client}</option>`).join('')}
+        ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
       </select>
     </div>
     <div class="field"><label>Duty</label>
@@ -662,7 +681,7 @@ function toggleDmAwEventField(){
   const wrap=document.getElementById('f_dmAwEventWrap');
   if(duty==='fullVideo' && weddingId){
     const w=WEDDINGS.find(x=>x.id===weddingId);
-    document.getElementById('f_dmAwEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${ev.name}</option>`).join('') || '<option value="">No events yet</option>';
+    document.getElementById('f_dmAwEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
     wrap.style.display='block';
   } else {
     wrap.style.display='none';
@@ -689,8 +708,8 @@ function renderSettings(){
       <h2>Your Owner Login</h2>
       <div class="card">
         <div class="row2">
-          <div class="field"><label>Login ID</label><input id="f_ownerLoginId" value="${OWNER.loginId}"></div>
-          <div class="field"><label>Password</label><input id="f_ownerPassword" type="text" value="${OWNER.password}"></div>
+          <div class="field"><label>Login ID</label><input id="f_ownerLoginId" value="${esc(OWNER.loginId)}"></div>
+          <div class="field"><label>Password</label><input id="f_ownerPassword" type="text" value="${esc(OWNER.password)}"></div>
         </div>
         <button class="btn btn-primary" onclick="saveOwnerAccount()">Save</button>
       </div>
@@ -700,8 +719,8 @@ function renderSettings(){
       ${EMPLOYEES.map(p=>`
         <div class="wedding-row" onclick="openStaffModal('${p.id}')">
           <div class="info">
-            <div class="client">${p.name}</div>
-            <div class="meta">${p.title} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'} · login: ${p.loginId}</div>
+            <div class="client">${esc(p.name)}</div>
+            <div class="meta">${esc(p.title)} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'} · login: ${esc(p.loginId)}</div>
           </div>
           <span class="pill ${p.accountRole==='owner'?'done':p.accountRole==='manager'?'in-progress':'not-started'}">${ROLE_LABEL[p.accountRole]}</span>
         </div>
@@ -711,7 +730,7 @@ function renderSettings(){
       <h2>Freelancers <span class="tmeta">(no login — assignable only)</span></h2>
       ${FREELANCERS.map(p=>`
         <div class="wedding-row" style="cursor:default;">
-          <div class="info"><div class="client">${p.name}</div><div class="meta">${p.title}</div></div>
+          <div class="info"><div class="client">${esc(p.name)}</div><div class="meta">${esc(p.title)}</div></div>
         </div>
       `).join('')}
     </section>
@@ -722,8 +741,8 @@ function openStaffModal(personId, jumpToWork){
   document.getElementById('modalBody').innerHTML = `
     <h3>${p?'Edit Staff':'Add Staff'}</h3>
     <div class="row2">
-      <div class="field"><label>Name</label><input id="f_stName" value="${p?p.name:''}"></div>
-      <div class="field"><label>Job Title</label><input id="f_stTitle" value="${p?p.title:''}" placeholder="e.g. Photo Editor"></div>
+      <div class="field"><label>Name</label><input id="f_stName" value="${p?esc(p.name):''}"></div>
+      <div class="field"><label>Job Title</label><input id="f_stTitle" value="${p?esc(p.title):''}" placeholder="e.g. Photo Editor"></div>
     </div>
     <div class="field">
       <label>Account Role</label>
@@ -740,8 +759,8 @@ function openStaffModal(personId, jumpToWork){
       </div>
     </div>
     <div class="row2">
-      <div class="field"><label>Login ID</label><input id="f_stLoginId" value="${p?p.loginId:''}" placeholder="e.g. divya"></div>
-      <div class="field"><label>Password</label><input id="f_stPassword" type="text" value="${p?p.password:'123'}"></div>
+      <div class="field"><label>Login ID</label><input id="f_stLoginId" value="${p?esc(p.loginId):''}" placeholder="e.g. divya"></div>
+      <div class="field"><label>Password</label><input id="f_stPassword" type="text" value="${p?esc(p.password):'123'}"></div>
     </div>
     <div id="staffModalError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
     <div class="modal-actions">
@@ -828,7 +847,7 @@ function renderWeddingRow(w){
     <div class="wedding-row" onclick="openWeddingDetail('${w.id}')">
       <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
       <div class="info">
-        <div class="client">${w.client}</div>
+        <div class="client">${esc(w.client)}</div>
         <div class="meta">${w.events.length} events · ${fmtDate(w.date)}</div>
       </div>
       <div class="progress-mini">${p.done}/${p.total} tracks done</div>
@@ -849,7 +868,7 @@ function renderWeddingDetail(id){
     <span class="back-link" onclick="closeWeddingDetail()">&larr; back to weddings</span>
     <div class="detail-header">
       <div>
-        <h2 class="font-display" style="font-size:22px;">${w.client}</h2>
+        <h2 class="font-display" style="font-size:22px;">${esc(w.client)}</h2>
         <div style="color:var(--muted);font-size:13px;margin-top:4px;">${fmtDate(w.date)} · ${w.events.length} events</div>
       </div>
       <button class="btn btn-ghost" onclick="deleteWedding('${w.id}')">Delete Wedding</button>
@@ -860,7 +879,12 @@ function renderWeddingDetail(id){
     </div>
 
     <section class="block">
-      <h2>Data Management <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
+      <h2>Events &amp; Teams <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
+      ${w.events.map(ev=>renderEventCard(w.id, ev)).join('') || emptyState('No events yet. Add Mehendi, Sangeet, Wedding, Reception etc.')}
+    </section>
+
+    <section class="block">
+      <h2>Data Management</h2>
       ${renderDataManagement(w)}
     </section>
 
@@ -895,14 +919,14 @@ function renderEventCard(weddingId, ev){
       <div class="ehead" onclick="toggleEventCard('${ev.id}')">
         <div class="ehead-left">
           <span class="echev" id="chev_${ev.id}">▶</span>
-          <span class="ename">${ev.name}</span>
+          <span class="ename">${esc(ev.name)}</span>
         </div>
         <div class="edate">${fmtDate(ev.date)} · ${teamCount} assigned</div>
       </div>
       <div class="ebody" id="body_${ev.id}">
-        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">${ev.venue||'venue TBD'}</div>
-        <div class="team-line"><b>STILL</b>${ev.still.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
-        <div class="team-line"><b>CINE</b>${ev.cine.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${personName(pid)}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">${esc(ev.venue)||'venue TBD'}</div>
+        <div class="team-line"><b>STILL</b>${ev.still.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${esc(personName(pid))}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
+        <div class="team-line"><b>CINE</b>${ev.cine.map(pid=>`<span class="chip ${isFreelancer(pid)?'freelancer':''}">${esc(personName(pid))}</span>`).join('') || '<span style="color:var(--muted);">unassigned</span>'}</div>
         <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="event.stopPropagation();openEventModal('${weddingId}','${ev.id}')">Edit Team</button>
       </div>
     </div>
@@ -930,7 +954,7 @@ function renderPhotoEditingRow(w, subKey, label, hasLink){
       </select>
       <select onchange="updatePhotoEditing('${w.id}','${subKey}','assignee',this.value)">
         <option value="">Assign to...</option>
-        ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+        ${eligiblePeopleFor(subKey).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
       <select onchange="updatePhotoEditing('${w.id}','${subKey}','start',this.value)" title="Start Date">
         ${next30DayOptions(track.start)}
@@ -938,8 +962,8 @@ function renderPhotoEditingRow(w, subKey, label, hasLink){
       <select onchange="updatePhotoEditing('${w.id}','${subKey}','due',this.value)" title="Due Date">
         ${next30DayOptions(track.due)}
       </select>
-      ${hasLink?`<input type="text" placeholder="paste FotoOwl link" value="${track.link||''}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
-      ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
+      ${hasLink?`<input type="text" placeholder="paste FotoOwl link" value="${esc(track.link)}" onchange="updatePhotoEditing('${w.id}','${subKey}','link',this.value)">
+      ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}`:''}
     </div>
   `;
 }
@@ -964,7 +988,7 @@ function renderTrackRow(weddingId, trackDef, track, ref){
       </select>
       <select onchange="updateTrack('${weddingId}','${refStr}','assignee',this.value)">
         <option value="">Assign to...</option>
-        ${eligiblePeopleFor(trackDef.skill).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+        ${eligiblePeopleFor(trackDef.skill).map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
       </select>
       <select onchange="updateTrack('${weddingId}','${refStr}','start',this.value)" title="Start Date">
         ${next30DayOptions(track.start)}
@@ -972,8 +996,8 @@ function renderTrackRow(weddingId, trackDef, track, ref){
       <select onchange="updateTrack('${weddingId}','${refStr}','due',this.value)" title="Due Date">
         ${next30DayOptions(track.due)}
       </select>
-      <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
-      ${track.link ? `<a class="link-out" href="${track.link}" target="_blank" rel="noopener">open ↗</a>` : ''}
+      <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${weddingId}','${refStr}','link',this.value)">
+      ${track.link ? `<a class="link-out" href="${esc(track.link)}" target="_blank" rel="noopener">open ↗</a>` : ''}
     </div>
   `;
 }
@@ -992,13 +1016,13 @@ function renderFullVideoBox(w){
         return `
           <div class="fev-row">
             <span class="pill ${statusCls}">${statusText}</span>
-            <span class="tname">${ev.name}</span>
+            <span class="tname">${esc(ev.name)}</span>
             <select onchange="updateTrack('${w.id}','${ref}','status',this.value)">
               ${STATUS.map(s=>`<option value="${s}" ${track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
             </select>
             <select onchange="updateTrack('${w.id}','${ref}','assignee',this.value)">
               <option value="">Assign to...</option>
-              ${eligiblePeopleFor('fullVideo').map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
+              ${eligiblePeopleFor('fullVideo').map(p=>`<option value="${p.id}" ${track.assignee===p.id?'selected':''}>${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('')}
             </select>
             <select onchange="updateTrack('${w.id}','${ref}','start',this.value)" title="Start Date">${next30DayOptions(track.start)}</select>
             <select onchange="updateTrack('${w.id}','${ref}','due',this.value)" title="Due Date">${next30DayOptions(track.due)}</select>
@@ -1007,7 +1031,7 @@ function renderFullVideoBox(w){
               <option value="rendering" ${track.renderStatus==='rendering'?'selected':''}>In Rendering</option>
               <option value="rendered" ${track.renderStatus==='rendered'?'selected':''}>Video Rendered</option>
             </select>
-            <input type="text" placeholder="paste link" value="${track.link}" onchange="updateTrack('${w.id}','${ref}','link',this.value)">
+            <input type="text" placeholder="paste link" value="${esc(track.link)}" onchange="updateTrack('${w.id}','${ref}','link',this.value)">
           </div>
         `;
       }).join('')}
@@ -1018,6 +1042,7 @@ function getTrackByRef(w, ref){
   if(ref.kind==='wedding') return w.tracks[ref.trackKey];
   if(ref.kind==='videoEditingSingle') return w.videoEditing[ref.trackKey];
   if(ref.kind==='fullVideo') return w.videoEditing.fullVideo[ref.eventId];
+  if(ref.kind==='photoEditing') return w.photoEditing[ref.trackKey];
 }
 function updateTrack(weddingId, refStr, field, value){
   const w=WEDDINGS.find(x=>x.id===weddingId);
@@ -1055,7 +1080,7 @@ function renderDataManagement(w){
       return `
         <div class="dm-event-card">
           <div class="track-group-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-            <span>${fmtDate(ev.date)} — ${ev.name} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${ev.venue||'venue TBD'}</span></span>
+            <span>${fmtDate(ev.date)} — ${esc(ev.name)} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${esc(ev.venue)||'venue TBD'}</span></span>
             <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;" onclick="openEventModal('${w.id}','${ev.id}')">Edit</span>
           </div>
           ${renderDmFlexRow(w, ev, 'still', '📷', 'Still')}
@@ -1072,9 +1097,9 @@ function renderDmFlexRow(w, ev, cat, icon, label){
     return `
       <div class="dm-cell ${entry.status}" onclick="toggleDmStatus('${w.id}','${ev.id}','${cat}',${i})">
         <span class="dm-remove" onclick="event.stopPropagation();removeDmPerson('${w.id}','${ev.id}','${cat}',${i})">×</span>
-        <div class="dm-name">${personName(entry.pid)}</div>
-        <div class="dm-size" id="${cellId}_display" onclick="event.stopPropagation();openDmSizeInput('${cellId}','${w.id}','${ev.id}','${cat}',${i})">${entry.dataSize||'+ size'}</div>
-        <input type="text" class="dm-size-input" id="${cellId}_input" placeholder="e.g. 120 GB" value="${entry.dataSize}"
+        <div class="dm-name">${esc(personName(entry.pid))}</div>
+        <div class="dm-size" id="${cellId}_display" onclick="event.stopPropagation();openDmSizeInput('${cellId}','${w.id}','${ev.id}','${cat}',${i})">${esc(entry.dataSize)||'+ size'}</div>
+        <input type="text" class="dm-size-input" id="${cellId}_input" placeholder="e.g. 120 GB" value="${esc(entry.dataSize)}"
           onclick="event.stopPropagation()"
           onblur="saveDmSize('${cellId}','${w.id}','${ev.id}','${cat}',${i},this.value)"
           onkeydown="if(event.key==='Enter')this.blur()">
@@ -1111,8 +1136,8 @@ function removeDmPerson(weddingId, eventId, cat, idx){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const entry=w.dataManagement.events[eventId][cat][idx];
   document.getElementById('modalBody').innerHTML = `
-    <h3>Remove ${personName(entry.pid)}?</h3>
-    <p style="font-size:13.5px;color:var(--muted);margin-bottom:6px;">This removes them from the ${cat==='still'?'Still':'Video'} data tracking for this event${entry.dataSize?` — recorded size (${entry.dataSize}) will be lost.`:'.'}</p>
+    <h3>Remove ${esc(personName(entry.pid))}?</h3>
+    <p style="font-size:13.5px;color:var(--muted);margin-bottom:6px;">This removes them from the ${cat==='still'?'Still':'Video'} data tracking for this event${entry.dataSize?` — recorded size (${esc(entry.dataSize)}) will be lost.`:'.'}</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" style="background:var(--red);" onclick="confirmRemoveDmPerson('${weddingId}','${eventId}','${cat}',${idx})">Remove</button>
@@ -1135,7 +1160,7 @@ function openAddDmPerson(weddingId, eventId, cat){
     <div class="field">
       <label>Select Person</label>
       <select id="f_dmPerson">
-        ${options.map(p=>`<option value="${p.id}">${p.name}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('') || '<option value="">No one left to add</option>'}
+        ${options.map(p=>`<option value="${p.id}">${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('') || '<option value="">No one left to add</option>'}
       </select>
     </div>
     <div class="modal-actions">
@@ -1210,8 +1235,8 @@ function saveNewWedding(){
 function personCheckboxes(selected){
   return `
     <div class="staff-check-grid">
-      ${EMPLOYEES.map(p=>`<label class="staff-check"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--muted);font-size:10.5px;">(${p.title})</span></label>`).join('')}
-      ${FREELANCERS.map(p=>`<label class="staff-check freelancer"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${p.name} <span style="color:var(--blue);font-size:10.5px;">(freelancer · ${p.title})</span></label>`).join('')}
+      ${EMPLOYEES.map(p=>`<label class="staff-check"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${esc(p.name)} <span style="color:var(--muted);font-size:10.5px;">(${esc(p.title)})</span></label>`).join('')}
+      ${FREELANCERS.map(p=>`<label class="staff-check freelancer"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${esc(p.name)} <span style="color:var(--blue);font-size:10.5px;">(freelancer · ${esc(p.title)})</span></label>`).join('')}
     </div>
   `;
 }
@@ -1219,12 +1244,12 @@ function openEventModal(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const ev = eventId ? w.events.find(e=>e.id===eventId) : null;
   document.getElementById('modalBody').innerHTML = `
-    <h3>${ev?'Edit Event':'Add Event'} — ${w.client}</h3>
+    <h3>${ev?'Edit Event':'Add Event'} — ${esc(w.client)}</h3>
     <div class="row2">
-      <div class="field"><label>Event Name</label><input id="f_ename" placeholder="e.g. Sangeet" value="${ev?ev.name:''}"></div>
+      <div class="field"><label>Event Name</label><input id="f_ename" placeholder="e.g. Sangeet" value="${ev?esc(ev.name):''}"></div>
       <div class="field"><label>Date</label><input id="f_edate" type="date" value="${ev?ev.date:''}"></div>
     </div>
-    <div class="field"><label>Venue</label><input id="f_evenue" placeholder="e.g. ITC Maurya" value="${ev?ev.venue:''}"></div>
+    <div class="field"><label>Venue</label><input id="f_evenue" placeholder="e.g. ITC Maurya" value="${ev?esc(ev.venue):''}"></div>
     <div class="field"><label>Still Photography Team</label>${personCheckboxes(ev?ev.still:[]).replace('staff-check-grid','staff-check-grid still-grid')}</div>
     <div class="field"><label>Cinematography Team</label>${personCheckboxes(ev?ev.cine:[]).replace('staff-check-grid','staff-check-grid cine-grid')}</div>
     <div class="modal-actions">
@@ -1257,12 +1282,15 @@ function saveEvent(weddingId, eventId){
   renderTab();
 }
 // Keep Data Management in sync when the team is edited later — adds newly-checked people
-// without touching status/size already recorded for people still on the team.
+// (without touching status/size already recorded for people still on the team) and removes
+// anyone who got unchecked from the team, so DM never holds stale/orphaned entries.
 function syncDmWithTeam(w, ev){
   ensureDmInit(w, ev);
   const dm=w.dataManagement.events[ev.id];
   ev.still.forEach(pid=>{ if(!dm.still.some(e=>e.pid===pid)) dm.still.push({pid, status:'pending', dataSize:''}); });
   ev.cine.forEach(pid=>{ if(!dm.video.some(e=>e.pid===pid)) dm.video.push({pid, status:'pending', dataSize:''}); });
+  dm.still = dm.still.filter(e=>ev.still.includes(e.pid));
+  dm.video = dm.video.filter(e=>ev.cine.includes(e.pid));
 }
 function deleteEvent(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
@@ -1329,14 +1357,12 @@ render();
         const data = snap.data();
         const weddings = JSON.parse(data.weddingsJSON || "[]");
         const employees = JSON.parse(data.employeesJSON || "[]");
-        if(weddings.length){
-          window.WEDDINGS.length = 0;
-          window.WEDDINGS.push(...weddings);
-        }
-        if(employees.length){
-          window.EMPLOYEES.length = 0;
-          window.EMPLOYEES.push(...employees);
-        }
+        // Always apply what's in Firestore, even if it's an empty array — a legitimately-emptied
+        // list (e.g. Rahul deleted every wedding) must not be silently ignored on next load.
+        window.WEDDINGS.length = 0;
+        window.WEDDINGS.push(...weddings);
+        window.EMPLOYEES.length = 0;
+        window.EMPLOYEES.push(...employees);
         if(data.ownerJSON && window.OWNER){
           const ownerData = JSON.parse(data.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
