@@ -94,6 +94,8 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .event-card .ehead-left{display:flex;align-items:center;gap:8px;min-width:0;}
 .event-card .echev{font-size:11px;color:var(--muted);transition:transform .15s;flex-shrink:0;}
 .event-card .echev.open{transform:rotate(90deg);}
+.dm-event-card .echev{transition:transform .15s;flex-shrink:0;}
+.dm-event-card .echev.open{transform:rotate(90deg);}
 .event-card .ename{font-weight:700;font-size:13.5px;white-space:nowrap;}
 .event-card .edate{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .event-card .ebody{display:none;padding:0 14px 14px;border-top:1px solid var(--line);}
@@ -171,7 +173,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v32';
+const APP_VERSION = 'v33';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -1122,6 +1124,13 @@ function ensureDmInit(w, ev){
     };
   }
 }
+// Which event cards are expanded, keyed by event id — starts empty (all collapsed).
+let dmExpandedEvents=new Set();
+function toggleDmEventCard(eventId){
+  if(dmExpandedEvents.has(eventId)) dmExpandedEvents.delete(eventId);
+  else dmExpandedEvents.add(eventId);
+  renderTab();
+}
 function renderDataManagement(w){
   const dm=w.dataManagement;
   return `
@@ -1137,14 +1146,22 @@ function renderDataManagement(w){
     </div>
     ${w.events.map(ev=>{
       ensureDmInit(w, ev);
+      const open=dmExpandedEvents.has(ev.id);
       return `
         <div class="dm-event-card">
-          <div class="track-group-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-            <span>${fmtDate(ev.date)} — ${esc(ev.name)} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${esc(ev.venue)||'venue TBD'}</span></span>
-            <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;" onclick="openEventModal('${w.id}','${ev.id}')">Edit</span>
+          <div class="track-group-title" style="margin-bottom:0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleDmEventCard('${ev.id}')">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="echev${open?' open':''}" style="font-size:11px;color:var(--muted);transition:transform .15s;">&#9654;</span>
+              ${fmtDate(ev.date)} — ${esc(ev.name)} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${esc(ev.venue)||'venue TBD'}</span>
+            </span>
+            <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;" onclick="event.stopPropagation();openEventModal('${w.id}','${ev.id}')">Edit</span>
           </div>
-          ${renderDmFlexRow(w, ev, 'still', '📷', 'Still')}
-          ${renderDmFlexRow(w, ev, 'video', '🎬', 'Video')}
+          ${open ? `
+            <div style="margin-top:10px;">
+              ${renderDmFlexRow(w, ev, 'still', '📷', 'Still')}
+              ${renderDmFlexRow(w, ev, 'video', '🎬', 'Video')}
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('') || emptyState('Add events first to track their data copy status')}
@@ -1466,7 +1483,7 @@ document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target
 
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
-  addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
+  addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard, toggleDmEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
