@@ -167,7 +167,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v31';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -1233,12 +1233,17 @@ function saveAddDmPerson(weddingId, eventId, cat){
   if(!typed){ closeModal(); return; }
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
-  const match=getAllPeople().find(p=>{
+  let match=getAllPeople().find(p=>{
     if(already.includes(p.id)) return false;
     const display=p.name+(p.type==='freelancer'?' (freelancer)':'');
     return display.toLowerCase()===typed.toLowerCase() || p.name.toLowerCase()===typed.toLowerCase();
   });
-  if(!match){ closeModal(); return; }
+  if(!match){
+    // Typed a name nobody recognizes — create a new freelancer on the spot instead of
+    // silently doing nothing, same as the event team picker does.
+    match={id:genId(), name:typed, type:'freelancer', title:'Freelancer'};
+    FREELANCERS.push(match);
+  }
   w.dataManagement.events[eventId][cat].push({pid:match.id, status:'pending', dataSize:''});
   closeModal();
   renderTab();
