@@ -21,6 +21,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .font-mono{font-variant-numeric:tabular-nums;}
 ::-webkit-scrollbar{display:none;}
 #app{max-width:1100px;margin:0 auto;padding:0 20px 100px;}
+.login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;margin:0 -20px;background:var(--paper-dim);}
+.login-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 32px 30px;box-shadow:0 12px 32px rgba(26,29,35,.07);}
+.login-brand{text-align:center;margin-bottom:30px;}
+.login-mark{width:48px;height:48px;border-radius:13px;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;letter-spacing:.5px;margin:0 auto 14px;}
+.login-brand h1{font-size:19px;font-weight:800;letter-spacing:-.01em;}
+.login-sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+.login-hint{font-size:11.5px;color:var(--muted);margin-top:16px;text-align:center;line-height:1.6;padding-top:16px;border-top:1px solid var(--line);}
+.login-version{font-size:11px;color:var(--muted);margin-top:22px;letter-spacing:.4px;}
 header.top{display:flex;align-items:center;justify-content:space-between;padding:16px 0 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:20;box-shadow:0 1px 6px rgba(0,0,0,.05);margin:0 -20px;padding-left:20px;padding-right:20px;}
 header.top .brand{display:flex;align-items:center;gap:10px;}
 header.top .mark{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px rgba(232,103,10,.4);}
@@ -173,7 +181,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v34';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -339,16 +347,21 @@ function logout(){
 }
 function renderLogin(){
   document.getElementById('app').innerHTML = `
-    <header class="top"><div class="brand"><div class="mark"></div><div><h1>Fotovision ERM</h1><div class="tag">${APP_VERSION} · SIGN IN</div></div></div></header>
-    <section class="block" style="margin-top:20px;max-width:420px;">
-      <div class="card">
-        <div class="field"><label>Login ID</label><input id="f_loginId" placeholder="e.g. admin"></div>
-        <div class="field"><label>Password</label><input id="f_loginPassword" type="password"></div>
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-mark">FV</div>
+          <h1>Fotovision ERM</h1>
+          <p class="login-sub">Wedding production &amp; delivery tracker</p>
+        </div>
+        <div class="field"><label>Login ID</label><input id="f_loginId" placeholder="e.g. admin" onkeydown="if(event.key==='Enter')document.getElementById('f_loginPassword').focus()"></div>
+        <div class="field"><label>Password</label><input id="f_loginPassword" type="password" onkeydown="if(event.key==='Enter')attemptLogin()"></div>
         <div id="loginError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
         <button class="btn btn-primary" style="width:100%;" onclick="attemptLogin()">Sign In</button>
+        <div class="login-hint">Owner login: <b>admin</b> / <b>admin123</b><br>Ask your Owner or Manager to add you in Settings if you don't have a login yet.</div>
       </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">Owner login: <b>admin</b> / <b>admin123</b>. Ask your Owner or Manager to add you in Settings if you don't have a login yet.</div>
-    </section>
+      <div class="login-version">Fotovision ERM · ${APP_VERSION}</div>
+    </div>
   `;
 }
 function findAccountByLogin(loginId){
