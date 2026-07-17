@@ -100,6 +100,19 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .chip.freelancer{background:var(--blue-dim);color:var(--blue);}
 .track-group{margin-bottom:18px;}
 .track-group-title{font-size:10.5px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;}
+.stage-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.stage-node{display:flex;flex-direction:column;align-items:center;flex:1 1 0;min-width:96px;text-align:center;cursor:pointer;}
+.stage-dot{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2px solid var(--line);background:var(--card);color:var(--muted);transition:border-color .15s;}
+.stage-node.done .stage-dot{background:var(--green);border-color:var(--green);color:#fff;}
+.stage-node.active .stage-dot{background:var(--amber);border-color:var(--amber);color:#fff;}
+.stage-node.stuck .stage-dot{background:var(--red);border-color:var(--red);color:#fff;}
+.stage-node.expanded .stage-dot{box-shadow:0 0 0 3px var(--paper-dim);}
+.stage-node:hover .stage-dot{border-color:var(--gold);}
+.stage-name{font-size:12px;font-weight:700;margin-top:9px;color:var(--ink);}
+.stage-count{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.stage-node.stuck .stage-count{color:var(--red);font-weight:600;}
+.stage-detail-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.stage-detail-head h3{font-size:15px;font-weight:800;}
 .track-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:8px;flex-wrap:wrap;}
 .track-row .tname{font-weight:600;font-size:13px;min-width:150px;flex:1;}
 .track-row .tmeta{font-size:11px;color:var(--muted);}
@@ -135,7 +148,6 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-content{flex:1;font-size:11.5px;line-height:1.3;}
 .ledger-content-inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .ledger-content.muted{color:var(--muted);}
-.ledger-row.holiday .ledger-content{color:var(--red);font-weight:600;}
 .ledger-row.holiday{background:var(--red-dim);border-radius:6px;padding:3px 4px;}
 .ledger-task{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap;white-space:nowrap;}
 .ledger-task .tname{font-size:11.5px;}
@@ -150,10 +162,11 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 <body>
 <div id="app"></div>
 <div class="overlay" id="overlay"><div class="modal" id="modalBody"></div></div>
+<datalist id="clientNamesList"></datalist>
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v26';
+const APP_VERSION = 'v27';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -279,6 +292,7 @@ function isDelayed(t){
 // ---------- Render shell ----------
 function render(){
   if(!currentUser){ renderLogin(); return; }
+  document.getElementById('clientNamesList').innerHTML = WEDDINGS.map(w=>`<option value="${esc(w.client)}">`).join('');
   const isOwner = currentUser.accountRole==='owner';
   const isManager = currentUser.accountRole==='manager';
   const isStaff = currentUser.accountRole==='staff';
@@ -353,6 +367,7 @@ function handleFab(){
 function tabBtn(id,label){ return `<button class="${currentTab===id?'active':''}" onclick="setTab('${id}')">${label}</button>`; }
 function setTab(id){ currentTab=id; currentWeddingId=null; assignWorkStaffId=null; renderTab(); }
 function renderTab(){
+  document.getElementById('clientNamesList').innerHTML = WEDDINGS.map(w=>`<option value="${esc(w.client)}">`).join('');
   const el=document.getElementById('tabContent');
   if(currentTab==='dashboard') el.innerHTML=renderDashboard();
   else if(currentTab==='mytasks') el.innerHTML=renderMyTasks();
@@ -409,7 +424,9 @@ function renderScheduleFor(personId, actingUserId){
   const items=collectAssignedItems(personId);
   const person=EMPLOYEES.find(x=>x.id===personId);
   const duties=awDutyOptions(person);
-  const canAssignInline = !actingUserId;
+  // Self-assign is always available here — staff can log their own work without an
+  // Owner/Manager having assigned it first; this is not gated behind actingUserId anymore.
+  const canAssignInline = true;
   const today=new Date(); today.setHours(0,0,0,0);
   const rangeStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
   const rangeEnd=new Date(today.getFullYear(), today.getMonth()+2, 0);
@@ -422,11 +439,10 @@ function renderScheduleFor(personId, actingUserId){
     const sunday=d.getDay()===0;
     const isToday=iso===today.toISOString().slice(0,10);
     const dateLabel=d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
-    if(sunday){
-      html+=`<div class="ledger-row holiday"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content">Sunday — Holiday</span></div>`;
-      continue;
-    }
     let content='';
+    // Sunday stays visually flagged in red, but it's not a hard block — someone can still
+    // be assigned or log work on a Sunday, so we no longer skip building the row's content.
+    if(sunday) content += `<span class="tmeta" style="color:var(--red);font-weight:700;margin-right:8px;">Sunday</span>`;
     if(dayItems.length){
       content += dayItems.map(item=>{
         const delayed=isDelayed(item.track);
@@ -443,32 +459,22 @@ function renderScheduleFor(personId, actingUserId){
           ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${refStr}')">Shift Future Work</button>`:''}
         </span>`;
       }).join('');
-    } else if(!canAssignInline){
-      content += `<span class="muted">No work assigned</span>`;
     }
     if(canAssignInline){
       content += `
         <span class="ledger-inline-assign">
-          <select id="cli_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
-            <option value="">Client...</option>
-            ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
-          </select>
+          <input list="clientNamesList" id="cli_${iso}" class="ledger-mini-select" placeholder="Client..." onchange="dmInlineHandle('${personId}','${iso}')">
           <select id="duty_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
-            <option value="">Duty...</option>
+            <option value="">Work Done...</option>
             ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
           </select>
           <select id="ev_${iso}" class="ledger-mini-select" style="display:none;" onchange="dmInlineHandle('${personId}','${iso}')"></select>
-          <select id="status_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
-            ${STATUS.map(s=>`<option value="${s}">${STATUS_LABEL[s]}</option>`).join('')}
-          </select>
-          <select id="start_${iso}" class="ledger-mini-select" title="Start Date" onchange="dmInlineHandle('${personId}','${iso}')">${next30DayOptions('')}</select>
-          <select id="due_${iso}" class="ledger-mini-select" title="Due Date" onchange="dmInlineHandle('${personId}','${iso}')">${next30DayOptions(iso)}</select>
           <input id="link_${iso}" class="ledger-mini-input" placeholder="link" onchange="dmInlineHandle('${personId}','${iso}')">
           <input id="notes_${iso}" class="ledger-mini-input" placeholder="notes" onchange="dmInlineHandle('${personId}','${iso}')">
         </span>
       `;
     }
-    html+=`<div class="ledger-row"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">${content}</span></div>`;
+    html+=`<div class="ledger-row${sunday?' holiday':''}"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">${content}</span></div>`;
   }
   return `<section class="block"><h2>${actingUserId?'My Schedule':'Schedule'}</h2>${html}</section>`;
 }
@@ -476,34 +482,32 @@ function dmInlineHandle(personId, dateIso){
   const cliEl=document.getElementById('cli_'+dateIso);
   const dutyEl=document.getElementById('duty_'+dateIso);
   const evEl=document.getElementById('ev_'+dateIso);
-  const statusEl=document.getElementById('status_'+dateIso);
-  const startEl=document.getElementById('start_'+dateIso);
-  const dueEl=document.getElementById('due_'+dateIso);
   const linkEl=document.getElementById('link_'+dateIso);
   const notesEl=document.getElementById('notes_'+dateIso);
   if(!cliEl||!dutyEl) return;
-  const cli=cliEl.value;
+  const cliName=cliEl.value.trim();
   const duty=dutyEl.value;
+  if(!cliName){ evEl.style.display='none'; return; }
+  // Typing an existing client's name reuses that wedding; typing a new name creates one
+  // on the spot (dated to the row being filled in) so it shows up under Weddings too.
+  const w=findOrCreateWeddingByName(cliName, dateIso);
+  const cli=w.id;
   // show/populate event picker only when Full Event Video is the chosen duty
-  if(duty==='fullVideo' && cli){
-    const w=WEDDINGS.find(x=>x.id===cli);
+  if(duty==='fullVideo'){
     evEl.innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
     evEl.style.display='inline-block';
   } else {
     evEl.style.display='none';
   }
-  if(!cli || !duty) return;
+  if(!duty) return;
   let eventId='';
   if(duty==='fullVideo'){
     eventId=evEl.value;
     if(!eventId) return; // wait until an event is picked too
   }
-  const status=statusEl?statusEl.value:'';
-  const start=startEl?startEl.value:'';
-  const due=dueEl?dueEl.value:dateIso;
   const link=linkEl?linkEl.value.trim():'';
   const notes=notesEl?notesEl.value.trim():'';
-  assignTrackForPerson(cli, duty, eventId, personId, start, due||dateIso, link, status, notes);
+  assignTrackForPerson(cli, duty, eventId, personId, '', dateIso, link, '', notes);
   renderTab();
 }
 function updateMyTask(personId, weddingId, refStr, value){
@@ -857,8 +861,8 @@ function renderWeddingRow(w){
 }
 
 // ---------- Wedding detail ----------
-function openWeddingDetail(id){ currentWeddingId=id; renderTab(); }
-function closeWeddingDetail(){ currentWeddingId=null; renderTab(); }
+function openWeddingDetail(id){ currentWeddingId=id; expandedStage=null; renderTab(); }
+function closeWeddingDetail(){ currentWeddingId=null; expandedStage=null; renderTab(); }
 
 function renderWeddingDetail(id){
   const w=WEDDINGS.find(x=>x.id===id);
@@ -889,26 +893,69 @@ function renderWeddingDetail(id){
     </section>
 
     <section class="block">
-      <h2>Post-Production — Wedding-wide</h2>
-
-      <div class="track-group">
-        <div class="track-group-title">Photo Editing</div>
-        ${renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true)}
-        ${renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false)}
-      </div>
-
-      <div class="track-group">
-        <div class="track-group-title">Video Editing</div>
-        ${VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('')}
-      </div>
-      <div class="track-group">
-        ${renderFullVideoBox(w)}
-      </div>
-
-      <div class="track-group">
-        ${WEDDING_TRACKS.map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('')}
-      </div>
+      <h2>Post-Production</h2>
+      ${renderStageRow(w)}
+      ${renderStageDetail(w)}
     </section>
+  `;
+}
+// ---------- Post-Production as parallel stages (Option E) — no connecting lines/sequence
+// implied, since Photo Editing / Video Editing / Album & Delivery all run at the same time
+// at Fotovision, not one after another. Each bead is its own independent status; clicking
+// one expands its tasks below. Categories mirror the track-groups that already existed.
+function stageCategories(w){
+  const photoTracks=[w.photoEditing.lightroom, w.photoEditing.photoshop];
+  const videoTracks=[...VIDEO_EDITING_SINGLE.map(t=>w.videoEditing[t.key]), ...w.events.map(ev=>w.videoEditing.fullVideo[ev.id])];
+  const albumTracks=WEDDING_TRACKS.map(t=>w.tracks[t.key]);
+  function summarize(list){
+    return {done:list.filter(t=>t.status==='done').length, total:list.length, stuck:list.some(isDelayed)};
+  }
+  return [
+    {key:'photoEditing', label:'Photo Edit', ...summarize(photoTracks)},
+    {key:'videoEditing', label:'Video Edit', ...summarize(videoTracks)},
+    {key:'albumDelivery', label:'Album &amp; Delivery', ...summarize(albumTracks)},
+  ];
+}
+let expandedStage=null;
+function setExpandedStage(key){ expandedStage = (expandedStage===key ? null : key); renderTab(); }
+function renderStageRow(w){
+  const stages=stageCategories(w);
+  if(expandedStage===null) expandedStage = (stages.find(s=>s.stuck) || stages.find(s=>s.done<s.total) || stages[0]).key;
+  return `
+    <div class="stage-row">
+      ${stages.map(s=>{
+        const cls = s.stuck ? 'stuck' : (s.done===s.total && s.total>0) ? 'done' : (s.done>0 ? 'active' : '');
+        const dotContent = s.stuck ? (s.total-s.done) : (s.done===s.total && s.total>0) ? '&#10003;' : (s.total-s.done);
+        const countText = s.stuck ? `${s.total-s.done} delayed` : (s.done===s.total && s.total>0) ? 'done' : (s.done>0? `${s.done}/${s.total} done` : 'not started');
+        return `
+        <div class="stage-node ${cls}${expandedStage===s.key?' expanded':''}" onclick="setExpandedStage('${s.key}')">
+          <div class="stage-dot">${dotContent}</div>
+          <div class="stage-name">${s.label}</div>
+          <div class="stage-count">${countText}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function renderStageDetail(w){
+  const stages=stageCategories(w);
+  const current = stages.find(s=>s.key===expandedStage) || stages[0];
+  let body='';
+  if(current.key==='photoEditing'){
+    body = renderPhotoEditingRow(w, 'lightroom', 'Lightroom', true) + renderPhotoEditingRow(w, 'photoshop', 'Photoshop', false);
+  } else if(current.key==='videoEditing'){
+    body = VIDEO_EDITING_SINGLE.map(t=>renderTrackRow(w.id, t, w.videoEditing[t.key], {kind:'videoEditingSingle', trackKey:t.key})).join('') + renderFullVideoBox(w);
+  } else {
+    body = WEDDING_TRACKS.map(t=>renderTrackRow(w.id, t, w.tracks[t.key], {kind:'wedding', trackKey:t.key})).join('');
+  }
+  return `
+    <div class="card stage-detail">
+      <div class="stage-detail-head">
+        <h3>${current.label.replace('&amp;','and')}</h3>
+        ${current.stuck?`<span class="pill delayed">${current.total-current.done} Delayed</span>`:''}
+      </div>
+      ${body}
+    </div>
   `;
 }
 
@@ -1159,9 +1206,11 @@ function openAddDmPerson(weddingId, eventId, cat){
     <h3>Add Person — ${cat==='still'?'Still':'Video'} Data</h3>
     <div class="field">
       <label>Select Person</label>
-      <select id="f_dmPerson">
-        ${options.map(p=>`<option value="${p.id}">${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}</option>`).join('') || '<option value="">No one left to add</option>'}
-      </select>
+      <input list="dmPersonOptions" id="f_dmPerson" placeholder="Type a staff name...">
+      <datalist id="dmPersonOptions">
+        ${options.map(p=>`<option value="${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}">`).join('')}
+      </datalist>
+      ${!options.length?'<div style="font-size:11px;color:var(--muted);margin-top:4px;">Everyone is already added for this category.</div>':''}
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1171,10 +1220,17 @@ function openAddDmPerson(weddingId, eventId, cat){
   document.getElementById('overlay').classList.add('show');
 }
 function saveAddDmPerson(weddingId, eventId, cat){
-  const pid=document.getElementById('f_dmPerson').value;
-  if(!pid) { closeModal(); return; }
+  const typed=document.getElementById('f_dmPerson').value.trim();
+  if(!typed){ closeModal(); return; }
   const w=WEDDINGS.find(x=>x.id===weddingId);
-  w.dataManagement.events[eventId][cat].push({pid, status:'pending', dataSize:''});
+  const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
+  const match=ALL_PEOPLE.find(p=>{
+    if(already.includes(p.id)) return false;
+    const display=p.name+(p.type==='freelancer'?' (freelancer)':'');
+    return display.toLowerCase()===typed.toLowerCase() || p.name.toLowerCase()===typed.toLowerCase();
+  });
+  if(!match){ closeModal(); return; }
+  w.dataManagement.events[eventId][cat].push({pid:match.id, status:'pending', dataSize:''});
   closeModal();
   renderTab();
 }
@@ -1229,6 +1285,25 @@ function saveNewWedding(){
   closeModal();
   currentWeddingId=w.id;
   renderTab();
+}
+// Used by the inline "Client..." combo box on the schedule/ledger rows — typing an
+// existing client's name reuses that wedding; typing a brand-new name creates one right
+// there (dated to whatever row prompted it) so it shows up under Weddings like any other.
+function findOrCreateWeddingByName(name, fallbackDate){
+  name=(name||'').trim();
+  if(!name) return null;
+  let w=WEDDINGS.find(x=>x.client.trim().toLowerCase()===name.toLowerCase());
+  if(!w){
+    w={
+      id:genId(), client:name, date:fallbackDate||new Date().toISOString().slice(0,10), events:[],
+      photoEditing:newPhotoEditingObj(),
+      videoEditing:newVideoEditingObj([]),
+      dataManagement:newDataManagementObj([]),
+      tracks:weddingWideTracks()
+    };
+    WEDDINGS.push(w);
+  }
+  return w;
 }
 
 // ---------- Event modal (add/edit team) ----------
@@ -1308,7 +1383,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
-  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule,
+  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
   dmInlineHandle,
   WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
 
