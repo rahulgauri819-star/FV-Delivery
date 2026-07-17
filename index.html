@@ -74,6 +74,10 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 .staff-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;max-height:180px;overflow-y:auto;padding:2px;}
+.person-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.12);}
+.person-dropdown-item{padding:9px 12px;font-size:13px;cursor:pointer;}
+.person-dropdown-item:hover{background:var(--paper-dim);}
+.person-dropdown-empty{padding:9px 12px;font-size:12px;color:var(--muted);}
 .staff-check{display:flex;align-items:center;gap:8px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:8px 9px;cursor:pointer;background:var(--paper-dim);}
 .staff-check input{width:auto;}
 .staff-check.freelancer{border-style:dashed;border-color:var(--blue);}
@@ -167,7 +171,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v31';
+const APP_VERSION = 'v32';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -1208,18 +1212,17 @@ function confirmRemoveDmPerson(weddingId, eventId, cat, idx){
   renderTab();
 }
 function openAddDmPerson(weddingId, eventId, cat){
-  const w=WEDDINGS.find(x=>x.id===weddingId);
-  const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
-  const options=getAllPeople().filter(p=>!already.includes(p.id));
   document.getElementById('modalBody').innerHTML = `
     <h3>Add Person — ${cat==='still'?'Still':'Video'} Data</h3>
     <div class="field">
       <label>Select Person</label>
-      <input list="dmPersonOptions" id="f_dmPerson" placeholder="Type a staff name...">
-      <datalist id="dmPersonOptions">
-        ${options.map(p=>`<option value="${esc(p.name)}${p.type==='freelancer'?' (freelancer)':''}">`).join('')}
-      </datalist>
-      ${!options.length?'<div style="font-size:11px;color:var(--muted);margin-top:4px;">Everyone is already added for this category.</div>':''}
+      <div style="position:relative;">
+        <input id="f_dmPerson" placeholder="Type a name or click to browse..." autocomplete="off"
+          oninput="renderDmPersonDropdown('${weddingId}','${eventId}','${cat}')"
+          onfocus="renderDmPersonDropdown('${weddingId}','${eventId}','${cat}')"
+          onblur="setTimeout(()=>{const d=document.getElementById('dmPersonDropdown'); if(d) d.style.display='none';},150)">
+        <div id="dmPersonDropdown" class="person-dropdown"></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1228,16 +1231,29 @@ function openAddDmPerson(weddingId, eventId, cat){
   `;
   document.getElementById('overlay').classList.add('show');
 }
+function renderDmPersonDropdown(weddingId, eventId, cat){
+  const box=document.getElementById('dmPersonDropdown');
+  const inp=document.getElementById('f_dmPerson');
+  if(!box||!inp) return;
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
+  const q=inp.value.trim().toLowerCase();
+  const options=getAllPeople().filter(p=>!already.includes(p.id) && p.name.toLowerCase().includes(q));
+  box.innerHTML = options.length
+    ? options.map(p=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();pickDmPerson('${p.id}')">${esc(p.name)}${p.type==='freelancer'?' <span class="tmeta">(freelancer)</span>':''}</div>`).join('')
+    : `<div class="person-dropdown-empty">No match — click Add to create "${esc(inp.value.trim())}" as a new freelancer</div>`;
+  box.style.display='block';
+}
+function pickDmPerson(pid){
+  document.getElementById('f_dmPerson').value = personName(pid);
+  document.getElementById('dmPersonDropdown').style.display='none';
+}
 function saveAddDmPerson(weddingId, eventId, cat){
   const typed=document.getElementById('f_dmPerson').value.trim();
   if(!typed){ closeModal(); return; }
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
-  let match=getAllPeople().find(p=>{
-    if(already.includes(p.id)) return false;
-    const display=p.name+(p.type==='freelancer'?' (freelancer)':'');
-    return display.toLowerCase()===typed.toLowerCase() || p.name.toLowerCase()===typed.toLowerCase();
-  });
+  let match=getAllPeople().find(p=>!already.includes(p.id) && p.name.toLowerCase()===typed.toLowerCase());
   if(!match){
     // Typed a name nobody recognizes — create a new freelancer on the spot instead of
     // silently doing nothing, same as the event team picker does.
@@ -1320,10 +1336,11 @@ function findOrCreateWeddingByName(name){
 }
 
 // ---------- Event modal (add/edit team) ----------
-// Team selection is a type-to-add tag input, not a checkbox grid: typing an existing
-// staff/freelancer's name and pressing Enter (or picking the autocomplete suggestion)
-// adds them as a chip. Typing a name nobody recognizes creates a new freelancer entry on
-// the spot, so it's remembered and suggested next time too.
+// Team selection is a type-to-add tag input with a real clickable dropdown (not just
+// browser autocomplete-while-typing) — clicking the field opens a list of everyone
+// available to pick from; typing narrows it. Picking a name adds them as a chip. Typing a
+// name nobody recognizes and pressing Enter creates a new freelancer entry on the spot,
+// so it's remembered and suggested next time too.
 let evTeamStill=[];
 let evTeamCine=[];
 function renderTeamPicker(cat){
@@ -1333,8 +1350,33 @@ function renderTeamPicker(cat){
   `).join('') || '<span style="color:var(--muted);font-size:12px;">nobody added yet</span>';
   return `
     <div style="margin-bottom:8px;">${chips}</div>
-    <input list="peopleNamesList" id="f_addPerson_${cat}" placeholder="Type a name and press Enter" style="width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--paper-dim);color:var(--ink);" onkeydown="if(event.key==='Enter'){event.preventDefault();addTeamPerson('${cat}');}">
+    <div style="position:relative;">
+      <input id="f_addPerson_${cat}" placeholder="Type a name or click to browse..." autocomplete="off"
+        style="width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--paper-dim);color:var(--ink);"
+        oninput="renderPersonDropdown('${cat}')"
+        onfocus="renderPersonDropdown('${cat}')"
+        onblur="setTimeout(()=>{const d=document.getElementById('personDropdown_${cat}'); if(d) d.style.display='none';},150)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addTeamPerson('${cat}');}">
+      <div id="personDropdown_${cat}" class="person-dropdown"></div>
+    </div>
   `;
+}
+function renderPersonDropdown(cat){
+  const box=document.getElementById('personDropdown_'+cat);
+  const inp=document.getElementById('f_addPerson_'+cat);
+  if(!box||!inp) return;
+  const selected = cat==='still' ? evTeamStill : evTeamCine;
+  const q=inp.value.trim().toLowerCase();
+  const options=getAllPeople().filter(p=>!selected.includes(p.id) && p.name.toLowerCase().includes(q));
+  box.innerHTML = options.length
+    ? options.map(p=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();selectTeamPerson('${cat}','${p.id}')">${esc(p.name)}${p.type==='freelancer'?' <span class="tmeta">(freelancer)</span>':''}</div>`).join('')
+    : `<div class="person-dropdown-empty">No match — press Enter to add "${esc(inp.value.trim())}" as a new freelancer</div>`;
+  box.style.display='block';
+}
+function selectTeamPerson(cat, pid){
+  const arr = cat==='still' ? evTeamStill : evTeamCine;
+  if(!arr.includes(pid)) arr.push(pid);
+  document.getElementById('teamPicker_'+cat).innerHTML = renderTeamPicker(cat);
 }
 function addTeamPerson(cat){
   const inp=document.getElementById('f_addPerson_'+cat);
@@ -1347,9 +1389,8 @@ function addTeamPerson(cat){
   }
   const arr = cat==='still' ? evTeamStill : evTeamCine;
   if(!arr.includes(match.id)) arr.push(match.id);
-  inp.value='';
   document.getElementById('teamPicker_'+cat).innerHTML = renderTeamPicker(cat);
-  renderTab(); // refreshes the peopleNamesList datalist with any newly added freelancer
+  renderTab(); // refreshes datalists elsewhere with any newly added freelancer
 }
 function removeTeamPerson(cat, pid){
   const arr = cat==='still' ? evTeamStill : evTeamCine;
@@ -1428,7 +1469,8 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
-  addTeamPerson, removeTeamPerson,
+  addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
+  renderDmPersonDropdown, pickDmPerson,
   dmInlineHandle,
   WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount});
 
