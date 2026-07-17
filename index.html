@@ -163,17 +163,21 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 <div id="app"></div>
 <div class="overlay" id="overlay"><div class="modal" id="modalBody"></div></div>
 <datalist id="clientNamesList"></datalist>
+<datalist id="peopleNamesList"></datalist>
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v29';
+const APP_VERSION = 'v30';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
 EMPLOYEES.forEach(p=>{ if(p.loginId===undefined) p.loginId=p.name.split(' ')[0].toLowerCase(); if(p.password===undefined) p.password='123'; });
-const ALL_PEOPLE = [...EMPLOYEES, ...FREELANCERS];
+// getAllPeople() is a live lookup, not a frozen snapshot — EMPLOYEES/FREELANCERS get
+// repopulated in place after the async Firestore load and whenever staff are added, so a
+// one-time [...EMPLOYEES,...FREELANCERS] copy taken here at script-eval time would go stale.
+function getAllPeople(){ return [...EMPLOYEES, ...FREELANCERS]; }
 const ACCOUNTS = [OWNER, ...EMPLOYEES]; // freelancers have no login
-function personName(id){ return id===OWNER.id ? OWNER.name : (ALL_PEOPLE.find(p=>p.id===id)?.name || id); }
+function personName(id){ return id===OWNER.id ? OWNER.name : (getAllPeople().find(p=>p.id===id)?.name || id); }
 function isFreelancer(id){ return FREELANCERS.some(p=>p.id===id); }
 const ROLE_LABEL = {owner:'Owner', manager:'Manager', staff:'Staff'};
 const SKILL_LABEL = {still:'Still Photography', cine:'Cinematography', lightroom:'Lightroom', photoshop:'Photoshop',
@@ -257,8 +261,8 @@ function next30DayOptions(selected){
   return opts;
 }
 function eligiblePeopleFor(skillKey){
-  if(!skillKey) return ALL_PEOPLE;
-  return ALL_PEOPLE.filter(p=> p.type==='freelancer' || (p.skills||[]).includes(skillKey));
+  if(!skillKey) return getAllPeople();
+  return getAllPeople().filter(p=> p.type==="freelancer" || (p.skills||[]).includes(skillKey));
 }
 function isSunday(dateStr){ return dateStr && new Date(dateStr+'T00:00:00').getDay()===0; }
 function shiftDateSkippingSunday(dateStr, days){
@@ -299,6 +303,7 @@ function isDelayed(t){
 function render(){
   if(!currentUser){ renderLogin(); return; }
   document.getElementById('clientNamesList').innerHTML = WEDDINGS.map(w=>`<option value="${esc(w.client)}">`).join('');
+  document.getElementById('peopleNamesList').innerHTML = getAllPeople().map(p=>`<option value="${esc(p.name)}">`).join('');
   const isOwner = currentUser.accountRole==='owner';
   const isManager = currentUser.accountRole==='manager';
   const isStaff = currentUser.accountRole==='staff';
@@ -374,6 +379,7 @@ function tabBtn(id,label){ return `<button class="${currentTab===id?'active':''}
 function setTab(id){ currentTab=id; currentWeddingId=null; assignWorkStaffId=null; renderTab(); }
 function renderTab(){
   document.getElementById('clientNamesList').innerHTML = WEDDINGS.map(w=>`<option value="${esc(w.client)}">`).join('');
+  document.getElementById('peopleNamesList').innerHTML = getAllPeople().map(p=>`<option value="${esc(p.name)}">`).join('');
   const el=document.getElementById('tabContent');
   if(currentTab==='dashboard') el.innerHTML=renderDashboard();
   else if(currentTab==='mytasks') el.innerHTML=renderMyTasks();
@@ -1204,7 +1210,7 @@ function confirmRemoveDmPerson(weddingId, eventId, cat, idx){
 function openAddDmPerson(weddingId, eventId, cat){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
-  const options=ALL_PEOPLE.filter(p=>!already.includes(p.id));
+  const options=getAllPeople().filter(p=>!already.includes(p.id));
   document.getElementById('modalBody').innerHTML = `
     <h3>Add Person — ${cat==='still'?'Still':'Video'} Data</h3>
     <div class="field">
@@ -1227,7 +1233,7 @@ function saveAddDmPerson(weddingId, eventId, cat){
   if(!typed){ closeModal(); return; }
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const already=w.dataManagement.events[eventId][cat].map(e=>e.pid);
-  const match=ALL_PEOPLE.find(p=>{
+  const match=getAllPeople().find(p=>{
     if(already.includes(p.id)) return false;
     const display=p.name+(p.type==='freelancer'?' (freelancer)':'');
     return display.toLowerCase()===typed.toLowerCase() || p.name.toLowerCase()===typed.toLowerCase();
@@ -1309,17 +1315,48 @@ function findOrCreateWeddingByName(name){
 }
 
 // ---------- Event modal (add/edit team) ----------
-function personCheckboxes(selected){
+// Team selection is a type-to-add tag input, not a checkbox grid: typing an existing
+// staff/freelancer's name and pressing Enter (or picking the autocomplete suggestion)
+// adds them as a chip. Typing a name nobody recognizes creates a new freelancer entry on
+// the spot, so it's remembered and suggested next time too.
+let evTeamStill=[];
+let evTeamCine=[];
+function renderTeamPicker(cat){
+  const selected = cat==='still' ? evTeamStill : evTeamCine;
+  const chips = selected.map(pid=>`
+    <span class="chip ${isFreelancer(pid)?'freelancer':''}">${esc(personName(pid))} <span style="cursor:pointer;" onclick="removeTeamPerson('${cat}','${pid}')">&times;</span></span>
+  `).join('') || '<span style="color:var(--muted);font-size:12px;">nobody added yet</span>';
   return `
-    <div class="staff-check-grid">
-      ${EMPLOYEES.map(p=>`<label class="staff-check"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${esc(p.name)} <span style="color:var(--muted);font-size:10.5px;">(${esc(p.title)})</span></label>`).join('')}
-      ${FREELANCERS.map(p=>`<label class="staff-check freelancer"><input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}> ${esc(p.name)} <span style="color:var(--blue);font-size:10.5px;">(freelancer · ${esc(p.title)})</span></label>`).join('')}
-    </div>
+    <div style="margin-bottom:8px;">${chips}</div>
+    <input list="peopleNamesList" id="f_addPerson_${cat}" placeholder="Type a name and press Enter" style="width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--paper-dim);color:var(--ink);" onkeydown="if(event.key==='Enter'){event.preventDefault();addTeamPerson('${cat}');}">
   `;
+}
+function addTeamPerson(cat){
+  const inp=document.getElementById('f_addPerson_'+cat);
+  const typed=inp.value.trim();
+  if(!typed) return;
+  let match=getAllPeople().find(p=>p.name.toLowerCase()===typed.toLowerCase());
+  if(!match){
+    match={id:genId(), name:typed, type:'freelancer', title:'Freelancer'};
+    FREELANCERS.push(match);
+  }
+  const arr = cat==='still' ? evTeamStill : evTeamCine;
+  if(!arr.includes(match.id)) arr.push(match.id);
+  inp.value='';
+  document.getElementById('teamPicker_'+cat).innerHTML = renderTeamPicker(cat);
+  renderTab(); // refreshes the peopleNamesList datalist with any newly added freelancer
+}
+function removeTeamPerson(cat, pid){
+  const arr = cat==='still' ? evTeamStill : evTeamCine;
+  const idx=arr.indexOf(pid);
+  if(idx>-1) arr.splice(idx,1);
+  document.getElementById('teamPicker_'+cat).innerHTML = renderTeamPicker(cat);
 }
 function openEventModal(weddingId, eventId){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const ev = eventId ? w.events.find(e=>e.id===eventId) : null;
+  evTeamStill = ev ? [...ev.still] : [];
+  evTeamCine = ev ? [...ev.cine] : [];
   document.getElementById('modalBody').innerHTML = `
     <h3>${ev?'Edit Event':'Add Event'} — ${esc(w.client)}</h3>
     <div class="row2">
@@ -1327,8 +1364,8 @@ function openEventModal(weddingId, eventId){
       <div class="field"><label>Date</label><input id="f_edate" type="date" value="${ev?ev.date:''}"></div>
     </div>
     <div class="field"><label>Venue</label><input id="f_evenue" placeholder="e.g. ITC Maurya" value="${ev?esc(ev.venue):''}"></div>
-    <div class="field"><label>Still Photography Team</label>${personCheckboxes(ev?ev.still:[]).replace('staff-check-grid','staff-check-grid still-grid')}</div>
-    <div class="field"><label>Cinematography Team</label>${personCheckboxes(ev?ev.cine:[]).replace('staff-check-grid','staff-check-grid cine-grid')}</div>
+    <div class="field"><label>Still Photography Team</label><div id="teamPicker_still">${renderTeamPicker('still')}</div></div>
+    <div class="field"><label>Cinematography Team</label><div id="teamPicker_cine">${renderTeamPicker('cine')}</div></div>
     <div class="modal-actions">
       ${ev?`<button class="btn btn-ghost" style="color:var(--red);" onclick="deleteEvent('${weddingId}','${eventId}')">Delete Event</button>`:''}
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1342,8 +1379,8 @@ function saveEvent(weddingId, eventId){
   const name=document.getElementById('f_ename').value.trim();
   const date=document.getElementById('f_edate').value;
   const venue=document.getElementById('f_evenue').value.trim();
-  const still=[...document.querySelectorAll('.still-grid input:checked')].map(c=>c.value);
-  const cine=[...document.querySelectorAll('.cine-grid input:checked')].map(c=>c.value);
+  const still=[...evTeamStill];
+  const cine=[...evTeamCine];
   if(!name||!date){ alert('Event name and date are required'); return; }
   if(eventId){
     const ev=w.events.find(e=>e.id===eventId);
@@ -1386,8 +1423,9 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
+  addTeamPerson, removeTeamPerson,
   dmInlineHandle,
-  WEDDINGS, EMPLOYEES, OWNER, render, attemptLogin, saveOwnerAccount});
+  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount});
 
 render();
 </script>
@@ -1417,6 +1455,7 @@ render();
         await setDoc(stateRef, {
           weddingsJSON: JSON.stringify(window.WEDDINGS),
           employeesJSON: JSON.stringify(window.EMPLOYEES),
+          freelancersJSON: JSON.stringify(window.FREELANCERS || []),
           ownerJSON: JSON.stringify(window.OWNER || {}),
           updatedAt: new Date().toISOString()
         });
@@ -1434,12 +1473,15 @@ render();
         const data = snap.data();
         const weddings = JSON.parse(data.weddingsJSON || "[]");
         const employees = JSON.parse(data.employeesJSON || "[]");
+        const freelancers = JSON.parse(data.freelancersJSON || "[]");
         // Always apply what's in Firestore, even if it's an empty array — a legitimately-emptied
         // list (e.g. Rahul deleted every wedding) must not be silently ignored on next load.
         window.WEDDINGS.length = 0;
         window.WEDDINGS.push(...weddings);
         window.EMPLOYEES.length = 0;
         window.EMPLOYEES.push(...employees);
+        window.FREELANCERS.length = 0;
+        window.FREELANCERS.push(...freelancers);
         if(data.ownerJSON && window.OWNER){
           const ownerData = JSON.parse(data.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
