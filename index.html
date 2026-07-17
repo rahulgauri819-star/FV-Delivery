@@ -166,7 +166,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v28';
+const APP_VERSION = 'v29';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -268,7 +268,13 @@ function shiftDateSkippingSunday(dateStr, days){
   while(d.getDay()===0){ d.setDate(d.getDate()+1); }
   return d.toISOString().slice(0,10);
 }
-function dateChip(d){ const dt=new Date(d+'T00:00:00'); return {day:dt.getDate(), mon:dt.toLocaleDateString('en-IN',{month:'short'})}; }
+function dateChip(d){ if(!d) return {day:'—', mon:''}; const dt=new Date(d+'T00:00:00'); return {day:dt.getDate(), mon:dt.toLocaleDateString('en-IN',{month:'short'})}; }
+// A wedding has no date of its own — it's just a group of events, each dated separately —
+// so anywhere we used to show "the wedding date" now shows its earliest event's date.
+function earliestEventDate(w){
+  const dates=w.events.map(e=>e.date).filter(Boolean).sort();
+  return dates.length ? dates[0] : null;
+}
 
 // ---------- progress calc ----------
 function allTracksOf(w){
@@ -490,7 +496,7 @@ function dmInlineHandle(personId, dateIso){
   if(!cliName){ evEl.style.display='none'; return; }
   // Typing an existing client's name reuses that wedding; typing a new name creates one
   // on the spot (dated to the row being filled in) so it shows up under Weddings too.
-  const w=findOrCreateWeddingByName(cliName, dateIso);
+  const w=findOrCreateWeddingByName(cliName);
   const cli=w.id;
   // show/populate event picker only when Full Event Video is the chosen duty
   if(duty==='fullVideo'){
@@ -844,7 +850,8 @@ function renderWeddingsList(){
   `;
 }
 function renderWeddingRow(w){
-  const chip=dateChip(w.date);
+  const wDate=earliestEventDate(w);
+  const chip=dateChip(wDate);
   const p=progressOf(w);
   const hasDelay = allTracksOf(w).some(isDelayed);
   return `
@@ -852,7 +859,7 @@ function renderWeddingRow(w){
       <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
       <div class="info">
         <div class="client">${esc(w.client)}</div>
-        <div class="meta">${w.events.length} events · ${fmtDate(w.date)}</div>
+        <div class="meta">${w.events.length} events${wDate?` · ${fmtDate(wDate)}`:''}</div>
       </div>
       <div class="progress-mini">${p.done}/${p.total} tracks done</div>
       ${hasDelay ? `<span class="pill delayed">DELAYED</span>` : `<span class="pill ${p.pct===100?'done':'in-progress'}">${p.pct}%</span>`}
@@ -868,12 +875,13 @@ function renderWeddingDetail(id){
   const w=WEDDINGS.find(x=>x.id===id);
   if(!w) return emptyState('Wedding not found');
   const p=progressOf(w);
+  const wDate=earliestEventDate(w);
   return `
     <span class="back-link" onclick="closeWeddingDetail()">&larr; back to weddings</span>
     <div class="detail-header">
       <div>
         <h2 class="font-display" style="font-size:22px;">${esc(w.client)}</h2>
-        <div style="color:var(--muted);font-size:13px;margin-top:4px;">${fmtDate(w.date)} · ${w.events.length} events</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px;">${w.events.length} events${wDate?` · ${fmtDate(wDate)}`:''}</div>
       </div>
       <button class="btn btn-ghost" onclick="deleteWedding('${w.id}')">Delete Wedding</button>
     </div>
@@ -1256,8 +1264,7 @@ function openWeddingModal(){
   document.getElementById('modalBody').innerHTML = `
     <h3>New Wedding Booking</h3>
     <div class="field"><label>Client Names</label><input id="f_client" placeholder="e.g. Karan & Simran"></div>
-    <div class="field"><label>Wedding Date</label><input id="f_date" type="date"></div>
-    <div style="font-size:12px;color:var(--muted);margin:6px 0 4px;">You can add events (Mehendi, Sangeet, Wedding, Reception etc.) after creating the wedding.</div>
+    <div style="font-size:12px;color:var(--muted);margin:6px 0 4px;">A wedding is just a group of events (Mehendi, Sangeet, Wedding, Reception etc.) — add those, with their own dates, after creating it here.</div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveNewWedding()">Create Wedding</button>
@@ -1267,10 +1274,9 @@ function openWeddingModal(){
 }
 function saveNewWedding(){
   const client=document.getElementById('f_client').value.trim();
-  const date=document.getElementById('f_date').value;
-  if(!client||!date){ alert('Client name and date are required'); return; }
+  if(!client){ alert('Client name is required'); return; }
   const w={
-    id:genId(), client, date, events:[],
+    id:genId(), client, events:[],
     photoEditing:newPhotoEditingObj(),
     videoEditing:newVideoEditingObj([]),
     dataManagement:newDataManagementObj([]),
@@ -1283,14 +1289,15 @@ function saveNewWedding(){
 }
 // Used by the inline "Client..." combo box on the schedule/ledger rows — typing an
 // existing client's name reuses that wedding; typing a brand-new name creates one right
-// there (dated to whatever row prompted it) so it shows up under Weddings like any other.
-function findOrCreateWeddingByName(name, fallbackDate){
+// there so it shows up under Weddings like any other. No date is set on the wedding
+// itself — dates live on its events.
+function findOrCreateWeddingByName(name){
   name=(name||'').trim();
   if(!name) return null;
   let w=WEDDINGS.find(x=>x.client.trim().toLowerCase()===name.toLowerCase());
   if(!w){
     w={
-      id:genId(), client:name, date:fallbackDate||new Date().toISOString().slice(0,10), events:[],
+      id:genId(), client:name, events:[],
       photoEditing:newPhotoEditingObj(),
       videoEditing:newVideoEditingObj([]),
       dataManagement:newDataManagementObj([]),
