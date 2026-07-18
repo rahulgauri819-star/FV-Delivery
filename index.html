@@ -34,7 +34,7 @@ header.top .brand{display:flex;align-items:center;gap:10px;}
 header.top .mark{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px rgba(232,103,10,.4);}
 header.top h1{font-size:16px;font-weight:700;letter-spacing:.2px;}
 header.top .tag{font-size:10.5px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
-nav.tabs{display:flex;gap:6px;margin:16px 0 22px;}
+nav.tabs{display:flex;gap:6px;margin:16px 0 22px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
 nav.tabs button{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;cursor:pointer;padding:9px 16px;white-space:nowrap;flex:0 0 auto;}
 nav.tabs button.active{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
 nav.tabs button:hover{color:var(--ink);}
@@ -52,8 +52,8 @@ section.block{margin-bottom:28px;}
 section.block > h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
 section.block > h2 .btn-add{font-size:11px;font-weight:700;color:#fff;background:var(--amber);border:none;border-radius:6px;padding:6px 12px;cursor:pointer;text-transform:none;letter-spacing:0;}
 section.block > h2 .btn-add:hover{background:var(--gold-dark);}
-.wedding-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:var(--card);margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
-.wedding-row:hover{border-color:var(--gold);}
+.wedding-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:var(--card);margin-bottom:10px;cursor:pointer;transition:border-color .15s;width:100%;text-align:left;font:inherit;color:inherit;}
+.wedding-row:hover,.wedding-row:focus{border-color:var(--gold);outline:none;}
 .date-chip{font-size:12px;text-align:center;background:var(--paper-dim);border-radius:7px;padding:6px 9px;min-width:52px;line-height:1.2;}
 .date-chip .d{font-size:16px;font-weight:600;display:block;}
 .wedding-row .info{flex:1;min-width:0;}
@@ -82,10 +82,10 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 .staff-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;max-height:180px;overflow-y:auto;padding:2px;}
-.person-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.12);}
-.person-dropdown-item{padding:9px 12px;font-size:13px;cursor:pointer;}
+.person-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,.12);}
+.person-dropdown-item{padding:10px 12px;font-size:13px;cursor:pointer;}
 .person-dropdown-item:hover{background:var(--paper-dim);}
-.person-dropdown-empty{padding:9px 12px;font-size:12px;color:var(--muted);}
+.person-dropdown-empty{padding:10px 12px;font-size:12px;color:var(--muted);}
 .staff-check{display:flex;align-items:center;gap:8px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:8px 9px;cursor:pointer;background:var(--paper-dim);}
 .staff-check input{width:auto;}
 .staff-check.freelancer{border-style:dashed;border-color:var(--blue);}
@@ -104,6 +104,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .event-card .echev.open{transform:rotate(90deg);}
 .dm-event-card .echev{transition:transform .15s;flex-shrink:0;}
 .dm-event-card .echev.open{transform:rotate(90deg);}
+.pending-chip{border-color:var(--red)!important;background:var(--red-dim)!important;}
 .event-card .ename{font-weight:700;font-size:13.5px;white-space:nowrap;}
 .event-card .edate{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .event-card .ebody{display:none;padding:0 14px 14px;border-top:1px solid var(--line);}
@@ -168,21 +169,65 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .fev-row:first-of-type{border-top:none;margin-top:8px;}
 .fev-row select{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);}
 .fev-row input[type=text]{font-size:11px;border:1px solid var(--line);border-radius:7px;padding:6px 7px;background:var(--paper-dim);width:130px;}
-.ledger-row{display:flex;align-items:center;gap:10px;padding:3px 4px;border-bottom:1px solid var(--line);min-height:0;}
-.ledger-date{width:88px;flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.ledger-row{display:flex;align-items:flex-start;gap:10px;padding:6px 4px;border-bottom:1px solid var(--line);}
+.ledger-date{width:88px;flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;padding-top:3px;}
 .ledger-content{flex:1;font-size:11.5px;line-height:1.3;}
-.ledger-content-inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ledger-content-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .ledger-content.muted{color:var(--muted);}
-.ledger-row.holiday{background:var(--red-dim);border-radius:6px;padding:3px 4px;}
-.ledger-task{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap;white-space:nowrap;}
+.ledger-row.holiday{background:var(--red-dim);border-radius:6px;padding:6px 4px;}
+.ledger-task{display:flex;align-items:center;gap:5px;flex-wrap:wrap;width:100%;margin-bottom:3px;}
 .ledger-task .tname{font-size:11.5px;}
 .ledger-task select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);}
 .ledger-task .btn-sm{padding:2px 7px;font-size:10px;}
 .ledger-add{color:var(--amber);font-weight:700;font-size:10.5px;cursor:pointer;white-space:nowrap;}
-.ledger-inline-assign{display:inline-flex;align-items:center;gap:4px;}
-.ledger-mini-select{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);max-width:120px;}
-.ledger-mini-input{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:var(--paper-dim);width:70px;}
-</style>
+.ledger-inline-assign{display:flex;align-items:center;gap:4px;flex-wrap:wrap;width:100%;}
+.ledger-mini-select{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:100px;}
+.ledger-mini-input{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:60px;}
+
+/* ── Mobile overrides ── */
+@media(max-width:600px){
+  #app{padding:0 12px 80px;}
+  header.top{margin:0 -12px;padding-left:12px;padding-right:12px;}
+  nav.tabs{gap:4px;margin:12px 0 16px;overflow-x:auto;padding-bottom:2px;}
+  nav.tabs button{font-size:11.5px;padding:8px 12px;}
+  .stat .num{font-size:24px;}
+
+  /* Wedding rows — stack progress info on mobile */
+  .wedding-row{flex-wrap:wrap;gap:10px;}
+  .progress-mini{font-size:11px;}
+
+  /* Ledger rows — stack date above content on very small screens */
+  .ledger-row{flex-direction:column;gap:4px;padding:8px 4px;}
+  .ledger-date{width:100%;font-size:11px;}
+  .ledger-inline-assign{gap:6px;}
+  .ledger-mini-select,.ledger-mini-input{font-size:13px;padding:7px 8px;border-radius:7px;}
+
+  /* Track cards in post-production */
+  .trackcard{padding:8px 10px;}
+  .trackcard-fields{grid-template-columns:1fr 1fr;}
+  .trackcard-field select{font-size:12px;padding:7px 6px;}
+
+  /* Stage beads — smaller on phone */
+  .stage-row{gap:8px;}
+  .stage-dot{width:38px;height:38px;font-size:12px;}
+  .stage-name{font-size:11px;}
+  .stage-count{font-size:10px;}
+
+  /* Data management */
+  .dm-event-card{padding:10px;}
+  .dm-row{flex-direction:column;gap:6px;}
+  .dm-cells{flex-wrap:wrap;}
+  .dm-cell{min-width:calc(50% - 6px);}
+
+  /* Staff directory */
+  .staff-row{flex-wrap:wrap;gap:8px;}
+
+  /* Modal full screen on small phones */
+  .modal{max-height:92vh;}
+
+  /* Detail header — stack on mobile */
+  .detail-header{flex-direction:column;align-items:flex-start;gap:10px;}
+}
 </head>
 <body>
 <div id="app"></div>
@@ -192,7 +237,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v40';
+const APP_VERSION = 'v43';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -360,6 +405,7 @@ function render(){
       ${!isStaff ? tabBtn('dashboard','Dashboard') : ''}
       ${(isOwner||isManager) ? tabBtn('assignwork','Assign Work') : ''}
       ${!isStaff ? tabBtn('weddings','Weddings') : ''}
+      ${(isOwner||isManager) ? tabBtn('harddisk','Hard Disks') : ''}
       ${isOwner ? tabBtn('settings','Settings') : ''}
     </nav>
     <div id="tabContent"></div>
@@ -429,6 +475,7 @@ function renderTab(){
   if(currentTab==='dashboard') el.innerHTML=renderDashboard();
   else if(currentTab==='mytasks') el.innerHTML=renderMyTasks();
   else if(currentTab==='assignwork') el.innerHTML=renderAssignWork();
+  else if(currentTab==='harddisk') el.innerHTML=renderHardDiskTab();
   else if(currentTab==='settings') el.innerHTML=renderSettings();
   else el.innerHTML = currentWeddingId ? renderWeddingDetail(currentWeddingId) : renderWeddingsList();
   if(window.fvScheduleSave) window.fvScheduleSave();
@@ -595,7 +642,19 @@ function dmInlineHandle(personId, dateIso){
   const link=linkEl?linkEl.value.trim():'';
   const notes=notesEl?notesEl.value.trim():'';
   assignTrackForPerson(cli, duty, eventId, personId, '', dateIso, link, '', notes);
-  renderTab();
+  // Reset inputs without re-rendering the whole tab — this keeps the inline-assign row
+  // visible so another item can be added to the same day straight away (multiple per day).
+  if(cliEl) cliEl.value='';
+  if(dutyEl) dutyEl.value='';
+  if(evEl){ evEl.style.display='none'; evEl.value=''; }
+  if(linkEl) linkEl.value='';
+  if(notesEl) notesEl.value='';
+  // Re-render just the ledger content area to show the new task chip above the input
+  // while keeping the input row itself intact.
+  fvScheduleSave();
+  // Full re-render after a short delay so the UI reflects the save, but only if the
+  // user hasn't started typing in the field again.
+  setTimeout(()=>{ renderTab(); }, 400);
 }
 function updateMyTask(personId, weddingId, refStr, value){
   const w=WEDDINGS.find(x=>x.id===weddingId);
@@ -793,6 +852,128 @@ function submitAssignForDate(personId, dateIso){
 }
 
 // ---------- Settings (owner only): staff directory ----------
+// ---------- Hard Disk tab ----------
+// Shows all known disks. Selecting one from the dropdown (or searching by name) reveals
+// which weddings and events have that disk assigned, and the copy status per person.
+let hdSelectedDisk = null;
+function setHdDisk(name){ hdSelectedDisk=name; renderTab(); }
+
+function renderHardDiskTab(){
+  // Collect all disks mentioned anywhere — from KNOWN_DISKS + all current wedding DM
+  const allDisks=[...new Set([
+    ...KNOWN_DISKS,
+    ...WEDDINGS.flatMap(w=>w.dataManagement.hardDisks||[])
+  ])].sort();
+
+  // Build disk → [{wedding, event, cat, entries}] index
+  function diskIndex(diskName){
+    const hits=[];
+    WEDDINGS.forEach(w=>{
+      if(!(w.dataManagement.hardDisks||[]).includes(diskName)) return;
+      w.events.forEach(ev=>{
+        ensureDmInit(w,ev);
+        const dm=w.dataManagement.events[ev.id];
+        const stillEntries=dm.still||[];
+        const videoEntries=dm.video||[];
+        if(stillEntries.length||videoEntries.length){
+          hits.push({w, ev, stillEntries, videoEntries});
+        }
+      });
+    });
+    return hits;
+  }
+
+  const selected = hdSelectedDisk && allDisks.includes(hdSelectedDisk) ? hdSelectedDisk : null;
+  const hits = selected ? diskIndex(selected) : [];
+
+  return `
+    <section class="block">
+      <h2>Hard Disks</h2>
+
+      <div style="position:relative;max-width:420px;margin-bottom:24px;">
+        <input id="hdSearchInput" placeholder="Search or select a disk..." autocomplete="off"
+          value="${selected ? esc(selected) : ''}"
+          style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--card);"
+          oninput="renderHdDropdown()"
+          onfocus="renderHdDropdown()"
+          onblur="setTimeout(()=>{const d=document.getElementById('hdDropdown');if(d)d.style.display='none';},150)">
+        <div id="hdDropdown" class="person-dropdown"></div>
+      </div>
+
+      ${!selected ? `
+        <div style="margin-top:8px;">
+          ${allDisks.length ? `
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${allDisks.length} disk${allDisks.length===1?'':'s'} in registry — click one to see which weddings and events it holds</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${allDisks.map(d=>`<span class="chip" style="cursor:pointer;font-size:13px;" onclick="setHdDisk('${esc(d)}')">💾 ${esc(d)}</span>`).join('')}
+            </div>
+          ` : emptyState('No disks added yet. Add disks in a wedding\'s Data Management section.')}
+        </div>
+      ` : `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+          <span style="font-size:20px;font-weight:800;">💾 ${esc(selected)}</span>
+          <button class="btn btn-ghost btn-sm" onclick="setHdDisk(null)">← All Disks</button>
+        </div>
+
+        ${hits.length === 0 ? `
+          <div class="card" style="color:var(--muted);font-size:13px;padding:20px;">
+            This disk is in the registry but hasn't been assigned to any specific event yet.
+            Assign it to a wedding in Data Management to see its contents here.
+          </div>
+        ` : hits.map(({w, ev, stillEntries, videoEntries})=>`
+          <div class="card" style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div>
+                <div style="font-weight:700;font-size:14px;">${esc(w.client)}</div>
+                <div style="font-size:12px;color:var(--muted);">${fmtDate(ev.date)} — ${esc(ev.name)}</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="openWeddingDetail('${w.id}');setTab('weddings')">Open Wedding</button>
+            </div>
+            ${stillEntries.length ? `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📷 Still</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  ${stillEntries.map(e=>`
+                    <span class="chip ${e.status==='copied'?'':'pending-chip'}">
+                      ${esc(personName(e.pid))}
+                      ${e.dataSize?`<span style="color:var(--muted);font-size:10.5px;"> · ${esc(e.dataSize)}</span>`:''}
+                      <span class="pill ${e.status==='copied'?'done':'not-started'}" style="margin-left:4px;font-size:9px;">${e.status==='copied'?'Copied':'Pending'}</span>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+            ${videoEntries.length ? `
+              <div>
+                <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">🎬 Video</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  ${videoEntries.map(e=>`
+                    <span class="chip ${e.status==='copied'?'':'pending-chip'}">
+                      ${esc(personName(e.pid))}
+                      ${e.dataSize?`<span style="color:var(--muted);font-size:10.5px;"> · ${esc(e.dataSize)}</span>`:''}
+                      <span class="pill ${e.status==='copied'?'done':'not-started'}" style="margin-left:4px;font-size:9px;">${e.status==='copied'?'Copied':'Pending'}</span>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      `}
+    </section>
+  `;
+}
+function renderHdDropdown(){
+  const box=document.getElementById('hdDropdown');
+  const inp=document.getElementById('hdSearchInput');
+  if(!box||!inp) return;
+  const q=inp.value.trim().toLowerCase();
+  const allDisks=[...new Set([...KNOWN_DISKS,...WEDDINGS.flatMap(w=>w.dataManagement.hardDisks||[])])].sort();
+  const options=allDisks.filter(d=>d.toLowerCase().includes(q));
+  if(!options.length){box.style.display='none';return;}
+  box.innerHTML=options.map(d=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();setHdDisk('${esc(d)}')">💾 ${esc(d)}</div>`).join('');
+  box.style.display='block';
+}
 function renderSettings(){
   return `
     <section class="block">
@@ -936,7 +1117,7 @@ function renderWeddingRow(w){
   const p=progressOf(w);
   const hasDelay = allTracksOf(w).some(isDelayed);
   return `
-    <div class="wedding-row" onclick="openWeddingDetail('${w.id}')">
+    <button class="wedding-row" onclick="openWeddingDetail('${w.id}')">
       <div class="date-chip"><span class="d">${chip.day}</span>${chip.mon}</div>
       <div class="info">
         <div class="client">${esc(w.client)}</div>
@@ -944,7 +1125,7 @@ function renderWeddingRow(w){
       </div>
       <div class="progress-mini">${p.done}/${p.total} tracks done</div>
       ${hasDelay ? `<span class="pill delayed">DELAYED</span>` : `<span class="pill ${p.pct===100?'done':'in-progress'}">${p.pct}%</span>`}
-    </div>
+    </button>
   `;
 }
 
@@ -1651,6 +1832,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
   renderDmPersonDropdown, pickDmPerson, renderClientDropdown, selectClientOption,
+  renderHdDropdown, setHdDisk,
   dmInlineHandle,
   WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
 
