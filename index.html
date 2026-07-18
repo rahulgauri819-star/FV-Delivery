@@ -127,17 +127,17 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .stage-node.stuck .stage-count{color:var(--red);font-weight:600;}
 .stage-detail-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .stage-detail-head h3{font-size:15px;font-weight:800;}
-.trackcard{border-radius:9px;padding:10px 14px;margin-bottom:8px;border:1px solid var(--line);background:var(--card);transition:background .15s,border-color .15s;}
+.trackcard{border-radius:8px;padding:8px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--card);transition:background .15s,border-color .15s;}
 .trackcard.is-done{background:var(--green-dim);border-color:var(--green);}
 .trackcard.is-not-done,.trackcard.is-delayed{background:var(--red-dim);border-color:var(--red);}
-.trackcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
-.trackcard-title{font-weight:700;font-size:13px;}
+.trackcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;}
+.trackcard-title{font-weight:700;font-size:12.5px;}
 .trackcard-title .plat{color:var(--muted);font-weight:500;font-size:11px;}
-.trackcard-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-bottom:6px;}
+.trackcard-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:5px;margin-bottom:5px;}
 .trackcard-field label{display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
-.trackcard-field select{width:100%;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;background:var(--card);}
-.trackcard-link{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);}
-.trackcard-link input{flex:1;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;background:var(--card);}
+.trackcard-field select{width:100%;padding:5px 6px;border:1px solid var(--line);border-radius:5px;font-size:11px;background:var(--card);}
+.trackcard-link{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.trackcard-link input{flex:1;padding:5px 6px;border:1px solid var(--line);border-radius:5px;font-size:11px;background:var(--card);}
 .track-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:8px;flex-wrap:wrap;}
 .track-row .tname{font-weight:600;font-size:13px;min-width:150px;flex:1;}
 .track-row .tmeta{font-size:11px;color:var(--muted);}
@@ -192,7 +192,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v38';
+const APP_VERSION = 'v40';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -972,7 +972,7 @@ function renderWeddingDetail(id){
     </div>
 
     <section class="block">
-      <h2>Data Management <button class="btn-add" onclick="openEventModal('${w.id}')">+ Add Event</button></h2>
+      <h2>Data Management</h2>
       ${renderDataManagement(w)}
     </section>
 
@@ -1219,16 +1219,27 @@ function toggleDmEventCard(eventId){
   else dmExpandedEvents.add(eventId);
   renderTab();
 }
+// Global known-disk registry — persisted to Firestore via KNOWN_DISKS array so previously
+// used disk names are always available as suggestions in the dropdown.
+const KNOWN_DISKS = [];
 function renderDataManagement(w){
   const dm=w.dataManagement;
   return `
     <div class="card" style="margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Hard Disks Assigned</div>
       <div class="assign-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-        ${dm.hardDisks.map((d,i)=>`<span class="chip">💾 ${d} <span style="cursor:pointer;color:var(--red);" onclick="removeHardDisk('${w.id}',${i})">×</span></span>`).join('') || '<span style="color:var(--muted);font-size:12.5px;">No disks assigned yet</span>'}
+        ${dm.hardDisks.map((d,i)=>`<span class="chip">💾 ${esc(d)} <span style="cursor:pointer;color:var(--red);" onclick="removeHardDisk('${w.id}',${i})">×</span></span>`).join('') || '<span style="color:var(--muted);font-size:12.5px;">No disks assigned yet</span>'}
       </div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="newHdInput_${w.id}" placeholder="e.g. HD-04 Seagate 2TB" style="flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper-dim);font-size:13px;">
+      <div style="display:flex;gap:8px;position:relative;">
+        <div style="position:relative;flex:1;">
+          <input id="newHdInput_${w.id}" placeholder="e.g. HD-04 Seagate 2TB" autocomplete="off"
+            style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper-dim);font-size:13px;"
+            oninput="renderDiskDropdown('${w.id}')"
+            onfocus="renderDiskDropdown('${w.id}')"
+            onblur="setTimeout(()=>{const d=document.getElementById('diskDropdown_${w.id}');if(d)d.style.display='none';},150)"
+            onkeydown="if(event.key==='Enter')addHardDisk('${w.id}')">
+          <div id="diskDropdown_${w.id}" class="person-dropdown"></div>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="addHardDisk('${w.id}')">Add Disk</button>
       </div>
     </div>
@@ -1240,9 +1251,12 @@ function renderDataManagement(w){
           <div class="track-group-title" style="margin-bottom:0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleDmEventCard('${ev.id}')">
             <span style="display:flex;align-items:center;gap:8px;">
               <span class="echev${open?' open':''}" style="font-size:11px;color:var(--muted);transition:transform .15s;">&#9654;</span>
-              ${fmtDate(ev.date)} — ${esc(ev.name)} <span style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;">· ${esc(ev.venue)||'venue TBD'}</span>
+              ${fmtDate(ev.date)} — ${esc(ev.name)}
             </span>
-            <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;" onclick="event.stopPropagation();openEventModal('${w.id}','${ev.id}')">Edit</span>
+            <span style="display:flex;gap:12px;align-items:center;">
+              <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:12.5px;" onclick="event.stopPropagation();duplicateEvent('${w.id}','${ev.id}')">Duplicate</span>
+              <span style="color:var(--amber);cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:12.5px;" onclick="event.stopPropagation();openEventModal('${w.id}','${ev.id}')">Edit</span>
+            </span>
           </div>
           ${open ? `
             <div style="margin-top:10px;">
@@ -1253,6 +1267,7 @@ function renderDataManagement(w){
         </div>
       `;
     }).join('') || emptyState('Add events first to track their data copy status')}
+    <button class="btn-add" style="margin-top:12px;display:block;" onclick="openEventModal('${w.id}')">+ Add Event</button>
   `;
 }
 function renderDmFlexRow(w, ev, cat, icon, label){
@@ -1294,7 +1309,64 @@ function saveDmSize(cellId, weddingId, eventId, cat, idx, value){
 function toggleDmStatus(weddingId, eventId, cat, idx){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   const entry=w.dataManagement.events[eventId][cat][idx];
-  entry.status = entry.status==='copied' ? 'pending' : 'copied';
+  const name=personName(entry.pid);
+  if(entry.status==='pending'){
+    // Red → Green: confirm data has been copied
+    document.getElementById('modalBody').innerHTML=`
+      <h3 style="margin-bottom:12px;">Mark as Copied?</h3>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Has <b>${esc(name)}</b>'s data been copied?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Not Yet</button>
+        <button class="btn btn-primary" onclick="confirmDmStatus('${weddingId}','${eventId}','${cat}',${idx},'copied')">Yes, Copied</button>
+      </div>`;
+  } else {
+    // Green → Red: confirm undo
+    document.getElementById('modalBody').innerHTML=`
+      <h3 style="margin-bottom:12px;">Undo Copy Status?</h3>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Are you sure you want to mark <b>${esc(name)}</b>'s data as <b>not yet copied</b>?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-ghost" style="color:var(--red);" onclick="confirmDmStatus('${weddingId}','${eventId}','${cat}',${idx},'pending')">Yes, Undo</button>
+      </div>`;
+  }
+  document.getElementById('overlay').classList.add('show');
+}
+function confirmDmStatus(weddingId, eventId, cat, idx, newStatus){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  w.dataManagement.events[eventId][cat][idx].status=newStatus;
+  closeModal();
+  renderTab();
+}
+// Disk dropdown — shows all previously used disk names, filtered as you type
+function renderDiskDropdown(weddingId){
+  const box=document.getElementById('diskDropdown_'+weddingId);
+  const inp=document.getElementById('newHdInput_'+weddingId);
+  if(!box||!inp) return;
+  const q=inp.value.trim().toLowerCase();
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const alreadyAdded=w.dataManagement.hardDisks;
+  const options=KNOWN_DISKS.filter(d=>!alreadyAdded.includes(d) && d.toLowerCase().includes(q));
+  if(!options.length){ box.style.display='none'; return; }
+  box.innerHTML=options.map(d=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();selectDisk('${weddingId}','${esc(d)}')">${esc(d)}</div>`).join('');
+  box.style.display='block';
+}
+function selectDisk(weddingId, name){
+  const inp=document.getElementById('newHdInput_'+weddingId);
+  if(inp) inp.value=name;
+  const box=document.getElementById('diskDropdown_'+weddingId);
+  if(box) box.style.display='none';
+  addHardDisk(weddingId);
+}
+function duplicateEvent(weddingId, eventId){
+  const w=WEDDINGS.find(x=>x.id===weddingId);
+  const ev=w.events.find(e=>e.id===eventId);
+  if(!ev) return;
+  const newId=genEventId();
+  const copy={id:newId, name:ev.name+' (copy)', date:ev.date, venue:ev.venue, still:[...ev.still], cine:[...ev.cine]};
+  w.events.push(copy);
+  w.videoEditing.fullVideo[newId]=newTrackObj();
+  syncDmWithTeam(w, copy);
+  dmExpandedEvents.add(newId);
   renderTab();
 }
 function removeDmPerson(weddingId, eventId, cat, idx){
@@ -1374,7 +1446,9 @@ function addHardDisk(weddingId){
   const inp=document.getElementById('newHdInput_'+weddingId);
   const name=inp.value.trim();
   if(!name) return;
-  w.dataManagement.hardDisks.push(name);
+  if(!w.dataManagement.hardDisks.includes(name)) w.dataManagement.hardDisks.push(name);
+  if(!KNOWN_DISKS.includes(name)) KNOWN_DISKS.push(name);
+  inp.value='';
   renderTab();
 }
 function removeHardDisk(weddingId, idx){
@@ -1571,13 +1645,14 @@ document.getElementById('overlay').addEventListener('click',(ev)=>{ if(ev.target
 
 Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWeddingModal, saveNewWedding,
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
-  addHardDisk, removeHardDisk, toggleDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard, toggleDmEventCard,
+  addHardDisk, removeHardDisk, toggleDmStatus, confirmDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard, toggleDmEventCard,
+  renderDiskDropdown, selectDisk, duplicateEvent,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
   renderDmPersonDropdown, pickDmPerson, renderClientDropdown, selectClientOption,
   dmInlineHandle,
-  WEDDINGS, EMPLOYEES, FREELANCERS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
+  WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
 
 render();
 </script>
@@ -1596,22 +1671,36 @@ render();
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const stateRef = doc(db, "fotovision_erm", "state");
+  // We split across multiple Firestore docs to avoid the 1MB per-document limit:
+  // - fotovision_erm/meta  — staff, freelancers, owner (small, rarely changes)
+  // - fotovision_erm/weddings_N — weddings in batches of 5 (can grow without hitting limit)
+  const metaRef = doc(db, "fotovision_erm", "meta");
+  const WEDDINGS_PER_DOC = 5;
+  function weddingDocRef(i){ return doc(db, "fotovision_erm", "weddings_"+i); }
 
   let saveTimer = null;
   window.fvScheduleSave = function(){
-    if(!window.WEDDINGS) return; // app not ready yet
+    if(!window.WEDDINGS) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       try {
-        await setDoc(stateRef, {
-          weddingsJSON: JSON.stringify(window.WEDDINGS),
+        // Save staff/owner/freelancers to meta doc
+        await setDoc(metaRef, {
           employeesJSON: JSON.stringify(window.EMPLOYEES),
           freelancersJSON: JSON.stringify(window.FREELANCERS || []),
           ownerJSON: JSON.stringify(window.OWNER || {}),
+          knownDisksJSON: JSON.stringify(window.KNOWN_DISKS || []),
+          weddingDocCount: Math.ceil(window.WEDDINGS.length / WEDDINGS_PER_DOC) || 1,
           updatedAt: new Date().toISOString()
         });
-        console.log("Fotovision ERM: saved to Firestore");
+        // Save weddings in batches of 5 per doc
+        const batches = [];
+        for(let i=0; i<window.WEDDINGS.length; i+=WEDDINGS_PER_DOC){
+          batches.push(window.WEDDINGS.slice(i, i+WEDDINGS_PER_DOC));
+        }
+        if(batches.length===0) batches.push([]);
+        await Promise.all(batches.map((batch,i)=>setDoc(weddingDocRef(i), {weddingsJSON: JSON.stringify(batch)})));
+        console.log("Fotovision ERM: saved to Firestore ("+batches.length+" wedding doc(s))");
       } catch(e){
         console.error("Fotovision ERM: save failed", e);
       }
@@ -1620,32 +1709,68 @@ render();
 
   (async () => {
     try {
-      const snap = await getDoc(stateRef);
-      if(snap.exists()){
-        const data = snap.data();
-        const weddings = JSON.parse(data.weddingsJSON || "[]");
-        const employees = JSON.parse(data.employeesJSON || "[]");
-        const freelancers = JSON.parse(data.freelancersJSON || "[]");
-        // Always apply what's in Firestore, even if it's an empty array — a legitimately-emptied
-        // list (e.g. Rahul deleted every wedding) must not be silently ignored on next load.
+      const metaSnap = await getDoc(metaRef);
+      if(metaSnap.exists()){
+        const meta = metaSnap.data();
+        const employees = JSON.parse(meta.employeesJSON || "[]");
+        const freelancers = JSON.parse(meta.freelancersJSON || "[]");
+        const knownDisks = JSON.parse(meta.knownDisksJSON || "[]");
+        // Load all wedding batches
+        const docCount = meta.weddingDocCount || 1;
+        const weddingSnaps = await Promise.all(
+          Array.from({length:docCount}, (_,i)=>getDoc(weddingDocRef(i)))
+        );
+        const weddings = weddingSnaps.flatMap(snap=>
+          snap.exists() ? JSON.parse(snap.data().weddingsJSON||"[]") : []
+        );
         window.WEDDINGS.length = 0;
         window.WEDDINGS.push(...weddings);
         window.EMPLOYEES.length = 0;
         window.EMPLOYEES.push(...employees);
         window.FREELANCERS.length = 0;
         window.FREELANCERS.push(...freelancers);
+        window.KNOWN_DISKS.length = 0;
+        window.KNOWN_DISKS.push(...knownDisks);
+        // Also seed from existing wedding hardDisks in case any weren't in the registry
+        window.WEDDINGS.forEach(w=>(w.dataManagement.hardDisks||[]).forEach(d=>{
+          if(!window.KNOWN_DISKS.includes(d)) window.KNOWN_DISKS.push(d);
+        }));
         if(window.ensureWeddingTracks) window.WEDDINGS.forEach(w=>window.ensureWeddingTracks(w));
         if(window.allTracksOf) window.WEDDINGS.forEach(w=>window.allTracksOf(w));
-        if(data.ownerJSON && window.OWNER){
-          const ownerData = JSON.parse(data.ownerJSON);
+        if(meta.ownerJSON && window.OWNER){
+          const ownerData = JSON.parse(meta.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
           if(ownerData.password) window.OWNER.password = ownerData.password;
         }
-        console.log("Fotovision ERM: loaded saved data from Firestore");
+        console.log("Fotovision ERM: loaded saved data from Firestore ("+weddings.length+" weddings)");
         if(window.render) window.render();
       } else {
-        // first run — seed Firestore with the current sample data
-        window.fvScheduleSave();
+        // Try loading from old single-doc format (migration from v38 and earlier)
+        const oldRef = doc(db, "fotovision_erm", "state");
+        const oldSnap = await getDoc(oldRef);
+        if(oldSnap.exists()){
+          const data = oldSnap.data();
+          const weddings = JSON.parse(data.weddingsJSON || "[]");
+          const employees = JSON.parse(data.employeesJSON || "[]");
+          const freelancers = JSON.parse(data.freelancersJSON || "[]");
+          window.WEDDINGS.length = 0; window.WEDDINGS.push(...weddings);
+          window.EMPLOYEES.length = 0; window.EMPLOYEES.push(...employees);
+          window.FREELANCERS.length = 0; window.FREELANCERS.push(...freelancers);
+          if(window.ensureWeddingTracks) window.WEDDINGS.forEach(w=>window.ensureWeddingTracks(w));
+          if(window.allTracksOf) window.WEDDINGS.forEach(w=>window.allTracksOf(w));
+          if(data.ownerJSON && window.OWNER){
+            const ownerData = JSON.parse(data.ownerJSON);
+            if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
+            if(ownerData.password) window.OWNER.password = ownerData.password;
+          }
+          console.log("Fotovision ERM: migrated from old single-doc format, re-saving...");
+          if(window.render) window.render();
+          // Re-save in new split format immediately so old doc is no longer needed
+          window.fvScheduleSave();
+        } else {
+          // First ever run — seed Firestore with sample data
+          window.fvScheduleSave();
+        }
       }
     } catch(e){
       console.error("Fotovision ERM: load failed, using local sample data", e);
