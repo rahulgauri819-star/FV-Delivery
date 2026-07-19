@@ -184,6 +184,19 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-mini-select{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:100px;}
 .ledger-mini-input{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:60px;}
 
+.sched-day{margin-bottom:20px;}
+.sched-day.sched-today .sched-date{color:var(--gold);font-weight:800;}
+.sched-day.holiday .sched-date{color:var(--red);}
+.sched-date{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.sched-tasks{display:flex;flex-direction:column;gap:8px;}
+.sched-task{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 14px;}
+.sched-task.sched-done{background:var(--green-dim);border-color:var(--green);}
+.sched-task.sched-delayed{background:var(--red-dim);border-color:var(--red);}
+.sched-task.sched-extra{border-style:dashed;background:var(--gold-dim);}
+.sched-task-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sched-task-label{font-weight:600;font-size:13px;flex:1;}
+.sched-note{font-size:11.5px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);}
+
 /* ── Mobile overrides ── */
 @media(max-width:600px){
   #app{padding:0 12px 80px;}
@@ -238,7 +251,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v44';
+const APP_VERSION = 'v45';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -313,7 +326,33 @@ let WEDDINGS = [];
 let currentTab='dashboard';
 let currentWeddingId=null;
 
+const TASKS = []; // independent task records — see spec comment below
+// Every staff task lives here, regardless of source:
+// - Created by owner assigning from Post-Production (linked to a wedding track via ref)
+// - Created by owner assigning directly from Assign Work (free-form, no wedding required)
+// - Created by staff logging extra work themselves
+// Shape: {id, personId, label, client, dueDate, status, note, type, weddingId?, ref?, createdBy, createdAt, isExtra}
 let __idCounter=0;
+function genTaskId(){ return 'tk'+Date.now().toString(36)+(__idCounter++).toString(36); }
+// When a wedding track is assigned to someone, create or update the matching TASKS entry
+// so it appears on their schedule without the owner having to do anything extra.
+function syncTaskFromTrack(w, trackLabel, track, ref){
+  if(!track.assignee) return;
+  const existing = TASKS.find(t=>t.weddingId===w.id && t.ref && JSON.stringify(t.ref)===JSON.stringify(ref));
+  if(existing){
+    existing.personId=track.assignee;
+    existing.label=trackLabel;
+    existing.client=w.client;
+    existing.dueDate=track.due||'';
+    existing.status=track.status||'not-started';
+  } else {
+    TASKS.push({
+      id:genTaskId(), personId:track.assignee, label:trackLabel, client:w.client,
+      dueDate:track.due||'', status:track.status||'not-started', note:'', type:'wedding',
+      weddingId:w.id, ref, isExtra:false, createdBy:currentUser?currentUser.id:'owner1', createdAt:new Date().toISOString()
+    });
+  }
+}
 function genId(){ return 'w'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
 function genEventId(){ return 'ev'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
 function fmtDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
@@ -525,71 +564,86 @@ function promptShiftSchedule(personId, weddingId, refStr){
   shiftFutureTasks(personId, weddingId, afterDate, days);
   renderTab();
 }
-function renderMyTasks(){ return renderScheduleFor(currentUser.id, currentUser.id); }
-function renderScheduleFor(personId, actingUserId){
-  const items=collectAssignedItems(personId);
-  const person=EMPLOYEES.find(x=>x.id===personId);
-  const duties=awDutyOptions(person);
-  // Self-assign is always available here — staff can log their own work without an
-  // Owner/Manager having assigned it first; this is not gated behind actingUserId anymore.
-  const canAssignInline = true;
-  const today=new Date(); today.setHours(0,0,0,0);
-  const rangeStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
-  const rangeEnd=new Date(today.getFullYear(), today.getMonth()+2, 0);
-  let html=''; let lastMonth='';
-  for(let d=new Date(rangeStart); d<=rangeEnd; d.setDate(d.getDate()+1)){
-    const iso=d.toISOString().slice(0,10);
-    const monthLabel=d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-    if(monthLabel!==lastMonth){ html+=`<div class="track-group-title" style="margin-top:18px;">${monthLabel}</div>`; lastMonth=monthLabel; }
-    const dayItems=items.filter(i=>i.track.due===iso);
-    const sunday=d.getDay()===0;
-    const isToday=iso===today.toISOString().slice(0,10);
-    const dateLabel=d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
-    let content='';
-    // Sunday stays visually flagged in red, but it's not a hard block — someone can still
-    // be assigned or log work on a Sunday, so we no longer skip building the row's content.
-    if(sunday) content += `<span class="tmeta" style="color:var(--red);font-weight:700;margin-right:8px;">Sunday</span>`;
-    if(dayItems.length){
-      content += dayItems.map(item=>{
-        const delayed=isDelayed(item.track);
-        const statusCls=delayed?'delayed':item.track.status;
-        const statusText=delayed?'Delayed':STATUS_LABEL[item.track.status];
-        const refStr=encodeURIComponent(JSON.stringify(item.ref));
-        return `<span class="ledger-task">
-          <span class="pill ${statusCls}">${statusText}</span>
-          <span class="tname">${esc(item.label)} <span class="tmeta">— ${esc(item.w.client)}</span></span>
-          <select onchange="updateMyTask('${personId}','${item.w.id}','${refStr}',this.value)">
-            ${STATUS.map(s=>`<option value="${s}" ${item.track.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
-          </select>
-          ${item.track.notes?`<span class="tmeta" title="${esc(item.track.notes)}">📝 ${esc(item.track.notes)}</span>`:''}
-          ${delayed?`<button class="btn btn-ghost btn-sm" onclick="promptShiftSchedule('${personId}','${item.w.id}','${refStr}')">Shift Future Work</button>`:''}
-        </span>`;
-      }).join('');
-    }
-    if(canAssignInline){
-      content += `
-        <span class="ledger-inline-assign">
-          <span style="position:relative;display:inline-block;">
-            <input id="cli_${iso}" data-person="${personId}" class="ledger-mini-select" placeholder="Client..." autocomplete="off"
-              oninput="renderClientDropdown('${iso}')"
-              onfocus="renderClientDropdown('${iso}')"
-              onblur="setTimeout(()=>{const d=document.getElementById('clientDropdown_${iso}'); if(d) d.style.display='none';},150)"
-              onchange="dmInlineHandle('${personId}','${iso}')">
-            <div id="clientDropdown_${iso}" class="person-dropdown"></div>
-          </span>
-          <select id="duty_${iso}" class="ledger-mini-select" onchange="dmInlineHandle('${personId}','${iso}')">
-            <option value="">Work Done...</option>
-            ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
-          </select>
-          <select id="ev_${iso}" class="ledger-mini-select" style="display:none;" onchange="dmInlineHandle('${personId}','${iso}')"></select>
-          <input id="link_${iso}" class="ledger-mini-input" placeholder="link" onchange="dmInlineHandle('${personId}','${iso}')">
-          <input id="notes_${iso}" class="ledger-mini-input" placeholder="notes" onchange="dmInlineHandle('${personId}','${iso}')">
-        </span>
-      `;
-    }
-    html+=`<div class="ledger-row${sunday?' holiday':''}"><span class="ledger-date">${dateLabel}${isToday?' · Today':''}</span><span class="ledger-content ledger-content-inline">${content}</span></div>`;
+function renderMyTasks(){ return renderScheduleFor(currentUser.id); }
+function renderScheduleFor(personId){
+  const myTasks=TASKS.filter(t=>t.personId===personId).sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
+  const isMe = currentUser && currentUser.id===personId;
+  const person=EMPLOYEES.find(x=>x.id===personId)||OWNER;
+  const today=new Date().toISOString().slice(0,10);
+
+  if(!myTasks.length) return `<section class="block"><h2>Schedule</h2>${emptyState('No tasks assigned yet.')}</section>`;
+
+  // Group by date
+  const byDate={};
+  myTasks.forEach(t=>{
+    const key=t.dueDate||'no-date';
+    if(!byDate[key]) byDate[key]=[];
+    byDate[key].push(t);
+  });
+
+  const dates=Object.keys(byDate).sort();
+  let html='';
+  dates.forEach(dateKey=>{
+    const tasks=byDate[dateKey];
+    const label=dateKey==='no-date'?'No due date':fmtDate(dateKey);
+    const isToday=dateKey===today;
+    const isPast=dateKey<today && dateKey!=='no-date';
+    const sunday=dateKey!=='no-date' && new Date(dateKey+'T00:00:00').getDay()===0;
+    html+=`<div class="sched-day${isToday?' sched-today':''}${sunday?' holiday':''}">
+      <div class="sched-date">${label}${isToday?' · Today':''}</div>
+      <div class="sched-tasks">
+        ${tasks.map(t=>{
+          const delayed=isPast && t.status!=='done';
+          const cls=t.status==='done'?'done':(delayed?'delayed':'not-started');
+          return `<div class="sched-task${t.isExtra?' sched-extra':''}">
+            <div class="sched-task-top">
+              <span class="pill ${cls}">${t.status==='done'?'Done':(delayed?'Delayed':'Not Done')}</span>
+              <span class="sched-task-label">${esc(t.label)}${t.client?` <span class="tmeta">— ${esc(t.client)}</span>`:''}${t.isExtra?` <span class="tmeta">(extra)</span>`:''}</span>
+              ${isMe?`<button class="btn btn-sm ${t.status==='done'?'btn-ghost':'btn-primary'}" onclick="toggleTaskDone('${t.id}')">${t.status==='done'?'↩ Undo':'✓ Done'}</button>`:''}
+            </div>
+            ${t.note?`<div class="sched-note">📝 ${esc(t.note)}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  const extraWip = isMe ? `
+    <div class="card" style="margin-top:20px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">+ Log Extra Work Done Today</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="extra_client" placeholder="Client name (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+        <input id="extra_label" placeholder="What did you do? e.g. Extra photo corrections" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+        <input id="extra_note" placeholder="Any notes for owner (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+        <button class="btn btn-primary" onclick="logExtraWork('${personId}')">Log This Work</button>
+      </div>
+    </div>
+  ` : '';
+
+  return `<section class="block"><h2>Schedule — ${esc(person.name)}</h2>${html}${extraWip}</section>`;
+}
+function toggleTaskDone(taskId){
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  t.status = t.status==='done' ? 'not-started' : 'done';
+  // Also sync back to the wedding track if this task is linked to one
+  if(t.weddingId && t.ref){
+    const w=WEDDINGS.find(x=>x.id===t.weddingId);
+    if(w){ const track=getTrackByRef(w,t.ref); if(track) track.status=t.status; }
   }
-  return `<section class="block"><h2>${actingUserId?'My Schedule':'Schedule'}</h2>${html}</section>`;
+  renderTab();
+}
+function logExtraWork(personId){
+  const client=document.getElementById('extra_client').value.trim();
+  const label=document.getElementById('extra_label').value.trim();
+  const note=document.getElementById('extra_note').value.trim();
+  if(!label){ alert('Please describe what you did.'); return; }
+  TASKS.push({
+    id:genTaskId(), personId, label, client, dueDate:new Date().toISOString().slice(0,10),
+    status:'done', note, type:'extra', isExtra:true,
+    createdBy:personId, createdAt:new Date().toISOString()
+  });
+  renderTab();
 }
 // Real clickable dropdown for the Client field (was browser-native datalist, which only
 // showed suggestions while typing and had no "browse everyone" affordance) — click to
@@ -666,30 +720,147 @@ function updateMyTask(personId, weddingId, refStr, value){
   renderTab();
 }
 
-// ---------- Assign Work tab (owner/manager): staff-wise database ----------
+// ---------- Assign Work tab (owner/manager) ----------
 let assignWorkStaffId=null;
 function openAssignWorkStaff(id){ assignWorkStaffId=id; renderTab(); }
 function closeAssignWorkStaff(){ assignWorkStaffId=null; renderTab(); }
 function renderAssignWork(){
   if(assignWorkStaffId){
-    const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId);
-    return `<span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
-      <h2 class="font-display" style="font-size:20px;margin-bottom:14px;">${esc(p.name)} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${esc(p.title)}</span></h2>
-      ${renderScheduleFor(p.id, null)}`;
+    const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
+    const myTasks=TASKS.filter(t=>t.personId===assignWorkStaffId && !t.isExtra).sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
+    const today=new Date().toISOString().slice(0,10);
+    const extraTasks=TASKS.filter(t=>t.personId===assignWorkStaffId && t.isExtra);
+    return `
+      <span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
+      <h2 class="font-display" style="font-size:20px;margin-bottom:20px;">${esc(p.name)} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${esc(p.title)}</span></h2>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">+ Assign New Task</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="aw_label" placeholder="What to do — e.g. Lightroom editing, Album design..." style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+          <div style="position:relative;">
+            <input id="aw_client" placeholder="Client name (optional)" autocomplete="off"
+              style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
+              oninput="renderAwClientDropdown()" onfocus="renderAwClientDropdown()"
+              onblur="setTimeout(()=>{const d=document.getElementById('awClientDropdown');if(d)d.style.display='none';},150)">
+            <div id="awClientDropdown" class="person-dropdown"></div>
+          </div>
+          <input id="aw_due" type="date" placeholder="Due date" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+          <input id="aw_note" placeholder="Note for staff (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+          <button class="btn btn-primary" onclick="submitDirectAssign('${assignWorkStaffId}')">Assign Task</button>
+        </div>
+      </div>
+
+      <section class="block" style="padding:0;">
+        <h2 style="margin-bottom:14px;">Upcoming Tasks (${myTasks.filter(t=>t.status!=='done').length} pending)</h2>
+        ${myTasks.length ? myTasks.map(t=>{
+          const delayed=t.dueDate && t.dueDate<today && t.status!=='done';
+          return `<div class="sched-task${delayed?' sched-delayed':''}${t.status==='done'?' sched-done':''}">
+            <div class="sched-task-top">
+              <span class="pill ${t.status==='done'?'done':(delayed?'delayed':'not-started')}">${t.status==='done'?'Done':(delayed?'Delayed':'Not Done')}</span>
+              <span class="sched-task-label">${esc(t.label)}${t.client?` <span class="tmeta">— ${esc(t.client)}</span>`:''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+              <input type="date" value="${t.dueDate||''}" style="padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--paper-dim);"
+                onchange="updateTaskField('${t.id}','dueDate',this.value)">
+              <select style="padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--paper-dim);"
+                onchange="reassignTask('${t.id}',this.value)">
+                <option value="">Reassign to...</option>
+                ${EMPLOYEES.map(emp=>`<option value="${emp.id}" ${emp.id===t.personId?'selected':''}>${esc(emp.name)}</option>`).join('')}
+              </select>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="removeTask('${t.id}')">Remove</button>
+            </div>
+            ${t.note?`<div class="sched-note">📝 ${esc(t.note)}</div>`:''}
+          </div>`;
+        }).join('') : emptyState('No tasks assigned to this person yet.')}
+      </section>
+
+      ${extraTasks.length ? `
+        <section class="block" style="padding:0;margin-top:20px;">
+          <h2 style="margin-bottom:14px;">Extra Work Logged by ${esc(p.name)} 📋</h2>
+          ${extraTasks.map(t=>`
+            <div class="sched-task sched-extra">
+              <div class="sched-task-top">
+                <span class="pill done">Done</span>
+                <span class="sched-task-label">${esc(t.label)}${t.client?` <span class="tmeta">— ${esc(t.client)}</span>`:''} <span class="tmeta">(${fmtDate(t.dueDate)})</span></span>
+              </div>
+              ${t.note?`<div class="sched-note">📝 ${esc(t.note)}</div>`:''}
+            </div>
+          `).join('')}
+        </section>
+      ` : ''}
+    `;
   }
   return `
     <section class="block">
-      <h2>Staff — Pick Someone to View / Assign Work <button class="btn-add" onclick="openStaffModal(null, true)">+ Add Staff</button></h2>
+      <h2>Assign Work — Pick a Staff Member</h2>
       ${EMPLOYEES.map(p=>{
-        const count=collectAssignedItems(p.id).filter(i=>i.track.status!=='done').length;
+        const pending=TASKS.filter(t=>t.personId===p.id && !t.isExtra && t.status!=='done').length;
+        const extra=TASKS.filter(t=>t.personId===p.id && t.isExtra).length;
         return `
-        <div class="wedding-row" onclick="openAssignWorkStaff('${p.id}')">
-          <div class="info"><div class="client">${esc(p.name)}</div><div class="meta">${esc(p.title)} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div></div>
-          <span class="progress-mini">${count} active task${count===1?'':'s'}</span>
-        </div>`;
+        <button class="wedding-row" onclick="openAssignWorkStaff('${p.id}')">
+          <div class="info">
+            <div class="client">${esc(p.name)}</div>
+            <div class="meta">${esc(p.title)} · ${(p.skills||[]).map(s=>SKILL_LABEL[s]).join(', ')||'no skills tagged'}</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="progress-mini">${pending} pending</span>
+            ${extra?`<div style="font-size:10.5px;color:var(--amber);font-weight:700;margin-top:2px;">${extra} extra logged</div>`:''}
+          </div>
+        </button>`;
       }).join('')}
     </section>
   `;
+}
+function renderAwClientDropdown(){
+  const box=document.getElementById('awClientDropdown');
+  const inp=document.getElementById('aw_client');
+  if(!box||!inp) return;
+  const q=inp.value.trim().toLowerCase();
+  const options=WEDDINGS.filter(w=>w.client.toLowerCase().includes(q));
+  if(!options.length){box.style.display='none';return;}
+  box.innerHTML=options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_client').value='${esc(w.client)}';document.getElementById('awClientDropdown').style.display='none';">${esc(w.client)}</div>`).join('');
+  box.style.display='block';
+}
+function submitDirectAssign(personId){
+  const label=document.getElementById('aw_label').value.trim();
+  const client=document.getElementById('aw_client').value.trim();
+  const due=document.getElementById('aw_due').value;
+  const note=document.getElementById('aw_note').value.trim();
+  if(!label){ alert('Please describe what work to do.'); return; }
+  TASKS.push({
+    id:genTaskId(), personId, label, client, dueDate:due||'',
+    status:'not-started', note, type:'direct', isExtra:false,
+    createdBy:currentUser?currentUser.id:'owner1', createdAt:new Date().toISOString()
+  });
+  renderTab();
+}
+function updateTaskField(taskId, field, value){
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  t[field]=value;
+  // sync back to wedding track if linked
+  if(t.weddingId && t.ref){
+    const w=WEDDINGS.find(x=>x.id===t.weddingId);
+    if(w){ const track=getTrackByRef(w,t.ref); if(track) track[field]=value; }
+  }
+  fvScheduleSave();
+}
+function reassignTask(taskId, newPersonId){
+  if(!newPersonId) return;
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  t.personId=newPersonId;
+  if(t.weddingId && t.ref){
+    const w=WEDDINGS.find(x=>x.id===t.weddingId);
+    if(w){ const track=getTrackByRef(w,t.ref); if(track) track.assignee=newPersonId; }
+  }
+  renderTab();
+}
+function removeTask(taskId){
+  const idx=TASKS.findIndex(x=>x.id===taskId);
+  if(idx>-1) TASKS.splice(idx,1);
+  renderTab();
 }
 
 // ---------- Inline "Assign New Work" form on a staff member's page ----------
@@ -757,15 +928,18 @@ function toggleAwEventField(){
 }
 function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, due, link, status, notes){
   const w=WEDDINGS.find(x=>x.id===weddingId);
-  let t=null;
-  if(dutyValue==='photoEditing:lightroom' || dutyValue==='photoEditing:photoshop'){
-    t=w.photoEditing[dutyValue.split(':')[1]];
+  let t=null; let ref=null; let label='';
+  if(dutyValue==='photoEditing:lightroom'||dutyValue==='photoEditing:photoshop'){
+    const subKey=dutyValue.split(':')[1];
+    t=w.photoEditing[subKey]; ref={kind:'photoEditing',trackKey:subKey}; label=subKey==='lightroom'?'Lightroom':'Photoshop';
   } else if(dutyValue==='fullVideo'){
-    t=w.videoEditing.fullVideo[eventId];
+    t=w.videoEditing.fullVideo[eventId]; ref={kind:'fullVideo',eventId}; label='Full Event Video';
   } else if(dutyValue.startsWith('videoEditingSingle:')){
-    t=w.videoEditing[dutyValue.split(':')[1]];
+    const key=dutyValue.split(':')[1]; const def=VIDEO_EDITING_SINGLE.find(x=>x.key===key);
+    t=w.videoEditing[key]; ref={kind:'videoEditingSingle',trackKey:key}; label=def?def.label:key;
   } else if(dutyValue.startsWith('wedding:')){
-    t=w.tracks[dutyValue.split(':')[1]];
+    const key=dutyValue.split(':')[1]; const def=WEDDING_TRACKS.find(x=>x.key===key);
+    t=w.tracks[key]; ref={kind:'wedding',trackKey:key}; label=def?def.label:key;
   }
   if(!t) return false;
   t.assignee=personId;
@@ -774,6 +948,7 @@ function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, du
   if(link) t.link=link;
   if(status) t.status=status;
   if(notes) t.notes=notes;
+  if(ref) syncTaskFromTrack(w, label, t, ref);
   return true;
 }
 function submitAssignWork(personId){
@@ -1308,6 +1483,8 @@ function renderPhotoEditingRow(w, subKey, label, hasLink){
 function updatePhotoEditing(weddingId, subKey, field, value){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   w.photoEditing[subKey][field]=value;
+  const label=subKey==='lightroom'?'Lightroom':'Photoshop';
+  syncTaskFromTrack(w, label, w.photoEditing[subKey], {kind:'photoEditing',trackKey:subKey});
   renderTab();
 }
 
@@ -1382,6 +1559,12 @@ function updateTrack(weddingId, refStr, field, value){
   const ref=JSON.parse(decodeURIComponent(refStr));
   const track=getTrackByRef(w, ref);
   track[field]=value;
+  // Find label for this ref
+  let label='';
+  if(ref.kind==='videoEditingSingle'){ const d=VIDEO_EDITING_SINGLE.find(t=>t.key===ref.trackKey); label=d?d.label:ref.trackKey; }
+  else if(ref.kind==='wedding'){ const d=WEDDING_TRACKS.find(t=>t.key===ref.trackKey); label=d?d.label:ref.trackKey; }
+  else if(ref.kind==='fullVideo'){ const ev=w.events.find(e=>e.id===ref.eventId); label=ev?ev.name+' Full Video':'Full Video'; }
+  syncTaskFromTrack(w, label, track, ref);
   renderTab();
 }
 
@@ -1830,12 +2013,12 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addHardDisk, removeHardDisk, toggleDmStatus, confirmDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard, toggleDmEventCard,
   renderDiskDropdown, selectDisk, duplicateEvent,
   logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
-  openAssignWorkStaff, closeAssignWorkStaff, promptShiftSchedule, setExpandedStage,
+  openAssignWorkStaff, closeAssignWorkStaff, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
-  renderDmPersonDropdown, pickDmPerson, renderClientDropdown, selectClientOption,
+  renderDmPersonDropdown, pickDmPerson,
   renderHdDropdown, setHdDisk,
-  dmInlineHandle,
-  WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
+  renderAwClientDropdown, submitDirectAssign, toggleTaskDone, logExtraWork, updateTaskField, reassignTask, removeTask,
+  WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, TASKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
 
 render();
 </script>
@@ -1873,6 +2056,7 @@ render();
           freelancersJSON: JSON.stringify(window.FREELANCERS || []),
           ownerJSON: JSON.stringify(window.OWNER || {}),
           knownDisksJSON: JSON.stringify(window.KNOWN_DISKS || []),
+          tasksJSON: JSON.stringify(window.TASKS || []),
           weddingDocCount: Math.ceil(window.WEDDINGS.length / WEDDINGS_PER_DOC) || 1,
           updatedAt: new Date().toISOString()
         });
@@ -1898,6 +2082,7 @@ render();
         const employees = JSON.parse(meta.employeesJSON || "[]");
         const freelancers = JSON.parse(meta.freelancersJSON || "[]");
         const knownDisks = JSON.parse(meta.knownDisksJSON || "[]");
+        const tasks = JSON.parse(meta.tasksJSON || "[]");
         // Load all wedding batches
         const docCount = meta.weddingDocCount || 1;
         const weddingSnaps = await Promise.all(
@@ -1914,6 +2099,8 @@ render();
         window.FREELANCERS.push(...freelancers);
         window.KNOWN_DISKS.length = 0;
         window.KNOWN_DISKS.push(...knownDisks);
+        window.TASKS.length = 0;
+        window.TASKS.push(...tasks);
         // Also seed from existing wedding hardDisks in case any weren't in the registry
         window.WEDDINGS.forEach(w=>(w.dataManagement.hardDisks||[]).forEach(d=>{
           if(!window.KNOWN_DISKS.includes(d)) window.KNOWN_DISKS.push(d);
