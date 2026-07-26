@@ -262,7 +262,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v47';
+const APP_VERSION = 'v48';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -463,6 +463,13 @@ function isDelayed(t){
 
 // ---------- Render shell ----------
 function render(){
+  // Restore saved session from localStorage — so page refresh doesn't log you out
+  if(!currentUser){
+    try{
+      const saved=localStorage.getItem('fverm_loginId');
+      if(saved){ const account=findAccountByLogin(saved); if(account){ currentUser=account; currentTab=account.accountRole==='staff'?'mytasks':'dashboard'; } }
+    } catch(e){}
+  }
   if(!currentUser){ renderLogin(); return; }
   document.getElementById('clientNamesList').innerHTML = WEDDINGS.map(w=>`<option value="${esc(w.client)}">`).join('');
   document.getElementById('peopleNamesList').innerHTML = getAllPeople().map(p=>`<option value="${esc(p.name)}">`).join('');
@@ -492,6 +499,7 @@ function render(){
 }
 function logout(){
   currentUser=null; currentTab='dashboard'; currentWeddingId=null;
+  try{ localStorage.removeItem('fverm_loginId'); } catch(e){}
   render();
 }
 function renderLogin(){
@@ -532,11 +540,13 @@ function attemptLogin(){
   }
   currentUser=account;
   currentTab=account.accountRole==='staff' ? 'mytasks' : 'dashboard';
+  try{ localStorage.setItem('fverm_loginId', account.loginId); } catch(e){}
   render();
 }
 function loginAs(id){
   currentUser = id===OWNER.id ? OWNER : EMPLOYEES.find(p=>p.id===id);
   currentTab = currentUser.accountRole==='staff' ? 'mytasks' : 'dashboard';
+  try{ localStorage.setItem('fverm_loginId', currentUser.loginId); } catch(e){}
   render();
 }
 function handleFab(){
@@ -835,11 +845,12 @@ function renderAwClientDropdown(){
 function duplicateTask(taskId){
   const t=TASKS.find(x=>x.id===taskId);
   if(!t) return;
-  // Default to next day
   let nextDate='';
   if(t.dueDate){
-    const d=new Date(t.dueDate+'T00:00:00'); d.setDate(d.getDate()+1);
-    nextDate=d.toISOString().slice(0,10);
+    // Use local date arithmetic to avoid UTC timezone shifting the date
+    const parts=t.dueDate.split('-').map(Number);
+    const d=new Date(parts[0],parts[1]-1,parts[2]+1);
+    nextDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
   TASKS.push({
     id:genTaskId(), personId:t.personId, label:t.label, client:t.client,
