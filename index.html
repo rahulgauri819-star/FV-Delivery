@@ -262,7 +262,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v48';
+const APP_VERSION = 'v49';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -756,28 +756,14 @@ function renderAssignWork(){
       <h2 class="font-display" style="font-size:20px;margin-bottom:20px;">${esc(p.name)} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${esc(p.title)}</span></h2>
 
       <div class="card" style="margin-bottom:20px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">+ Assign New Task</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="position:relative;">
-            <input id="aw_label" placeholder="What to do..." autocomplete="off"
-              style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
-              oninput="renderAwLabelDropdown()" onfocus="renderAwLabelDropdown()"
-              onblur="setTimeout(()=>{const d=document.getElementById('awLabelDropdown');if(d)d.style.display='none';},150)">
-            <div id="awLabelDropdown" class="person-dropdown">
-              ${skillOpts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label').value='${esc(o)}';document.getElementById('awLabelDropdown').style.display='none';">${esc(o)}</div>`).join('')}
-            </div>
-          </div>
-          <div style="position:relative;">
-            <input id="aw_client" placeholder="Client name (optional)" autocomplete="off"
-              style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
-              oninput="renderAwClientDropdown()" onfocus="renderAwClientDropdown()"
-              onblur="setTimeout(()=>{const d=document.getElementById('awClientDropdown');if(d)d.style.display='none';},150)">
-            <div id="awClientDropdown" class="person-dropdown"></div>
-          </div>
-          <input id="aw_due" type="date" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
-          <input id="aw_note" placeholder="Note for staff (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
-          <button class="btn btn-primary" onclick="submitDirectAssign('${assignWorkStaffId}')">Assign Task</button>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">+ Assign Tasks</div>
+        <div id="aw_rows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+          ${renderAwRow(0, skillOpts)}
         </div>
+        <button class="btn btn-ghost btn-sm" style="margin-bottom:10px;" onclick="addAwRow()">+ Add Another Task</button>
+        <input id="aw_due" type="date" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);margin-bottom:8px;">
+        <input id="aw_note" placeholder="Note for staff (optional)" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);margin-bottom:10px;">
+        <button class="btn btn-primary" style="width:100%;" onclick="submitDirectAssign('${assignWorkStaffId}')">Assign All Tasks</button>
       </div>
 
       <section class="block" style="padding:0;margin-bottom:24px;">
@@ -822,32 +808,70 @@ function renderAssignWork(){
     </section>
   `;
 }
-function renderAwLabelDropdown(){
-  const box=document.getElementById('awLabelDropdown');
-  const inp=document.getElementById('aw_label');
+let awRowCount=1;
+function renderAwRow(idx, skillOpts){
+  const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
+  const opts=skillOpts||skillOptions(p);
+  return `<div id="aw_row_${idx}" style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="position:relative;flex:1;min-width:160px;">
+      <input id="aw_label_${idx}" placeholder="What to do..." autocomplete="off"
+        style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
+        oninput="renderAwRowLabelDrop(${idx})" onfocus="renderAwRowLabelDrop(${idx})"
+        onblur="setTimeout(()=>{const d=document.getElementById('awLabelDrop_${idx}');if(d)d.style.display='none';},150)">
+      <div id="awLabelDrop_${idx}" class="person-dropdown">
+        ${opts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label_${idx}').value='${esc(o)}';document.getElementById('awLabelDrop_${idx}').style.display='none';">${esc(o)}</div>`).join('')}
+      </div>
+    </div>
+    <div style="position:relative;flex:1;min-width:140px;">
+      <input id="aw_client_${idx}" placeholder="Client (optional)" autocomplete="off"
+        style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
+        oninput="renderAwRowClientDrop(${idx})" onfocus="renderAwRowClientDrop(${idx})"
+        onblur="setTimeout(()=>{const d=document.getElementById('awClientDrop_${idx}');if(d)d.style.display='none';},150)">
+      <div id="awClientDrop_${idx}" class="person-dropdown"></div>
+    </div>
+    ${idx>0?`<button class="btn btn-ghost btn-sm" style="color:var(--red);flex-shrink:0;padding:9px 10px;" onclick="removeAwRow(${idx})">✕</button>`:''}
+  </div>`;
+}
+function renderAwRowLabelDrop(idx){
+  const box=document.getElementById('awLabelDrop_'+idx);
+  const inp=document.getElementById('aw_label_'+idx);
   if(!box||!inp) return;
   const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
   const q=inp.value.trim().toLowerCase();
   const opts=skillOptions(p).filter(o=>o.toLowerCase().includes(q));
-  box.innerHTML=opts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label').value='${esc(o)}';document.getElementById('awLabelDropdown').style.display='none';">${esc(o)}</div>`).join('');
+  box.innerHTML=opts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label_${idx}').value='${esc(o)}';document.getElementById('awLabelDrop_${idx}').style.display='none';">${esc(o)}</div>`).join('');
   box.style.display=opts.length?'block':'none';
 }
-function renderAwClientDropdown(){
-  const box=document.getElementById('awClientDropdown');
-  const inp=document.getElementById('aw_client');
+function renderAwRowClientDrop(idx){
+  const box=document.getElementById('awClientDrop_'+idx);
+  const inp=document.getElementById('aw_client_'+idx);
   if(!box||!inp) return;
   const q=inp.value.trim().toLowerCase();
   const options=WEDDINGS.filter(w=>w.client.toLowerCase().includes(q));
   if(!options.length){box.style.display='none';return;}
-  box.innerHTML=options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_client').value='${esc(w.client)}';document.getElementById('awClientDropdown').style.display='none';">${esc(w.client)}</div>`).join('');
+  box.innerHTML=options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_client_${idx}').value='${esc(w.client)}';document.getElementById('awClientDrop_${idx}').style.display='none';">${esc(w.client)}</div>`).join('');
   box.style.display='block';
 }
+function addAwRow(){
+  const container=document.getElementById('aw_rows');
+  if(!container) return;
+  const idx=awRowCount++;
+  const div=document.createElement('div');
+  div.innerHTML=renderAwRow(idx);
+  container.appendChild(div.firstElementChild);
+}
+function removeAwRow(idx){
+  const row=document.getElementById('aw_row_'+idx);
+  if(row) row.remove();
+}
+// Keep old single-field names working (used by oninput in the initial row 0)
+function renderAwLabelDropdown(){ renderAwRowLabelDrop(0); }
+function renderAwClientDropdown(){ renderAwRowClientDrop(0); }
 function duplicateTask(taskId){
   const t=TASKS.find(x=>x.id===taskId);
   if(!t) return;
   let nextDate='';
   if(t.dueDate){
-    // Use local date arithmetic to avoid UTC timezone shifting the date
     const parts=t.dueDate.split('-').map(Number);
     const d=new Date(parts[0],parts[1]-1,parts[2]+1);
     nextDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -857,6 +881,29 @@ function duplicateTask(taskId){
     dueDate:nextDate, status:'not-started', note:t.note||'', type:'direct',
     isExtra:false, createdBy:(currentUser?currentUser.id:'owner1'), createdAt:new Date().toISOString()
   });
+  renderTab();
+}
+function submitDirectAssign(personId){
+  const due=document.getElementById('aw_due').value;
+  const note=document.getElementById('aw_note').value.trim();
+  const createdBy=currentUser?currentUser.id:'owner1';
+  let added=0;
+  for(let idx=0;idx<=awRowCount+5;idx++){
+    const labelEl=document.getElementById('aw_label_'+idx);
+    if(!labelEl) continue;
+    const label=labelEl.value.trim();
+    const clientEl=document.getElementById('aw_client_'+idx);
+    const client=clientEl?clientEl.value.trim():'';
+    if(!label) continue;
+    TASKS.push({
+      id:genTaskId(), personId, label, client, dueDate:due||'',
+      status:'not-started', note, type:'direct', isExtra:false,
+      createdBy, createdAt:new Date().toISOString()
+    });
+    added++;
+  }
+  if(!added){ alert('Please enter at least one task.'); return; }
+  awRowCount=1;
   renderTab();
 }
 function openEditTaskModal(taskId){
@@ -910,19 +957,6 @@ function saveEditTask(taskId){
     if(w){ const track=getTrackByRef(w,t.ref); if(track){ track.due=t.dueDate; } }
   }
   closeModal();
-  renderTab();
-}
-function submitDirectAssign(personId){
-  const label=document.getElementById('aw_label').value.trim();
-  const client=document.getElementById('aw_client').value.trim();
-  const due=document.getElementById('aw_due').value;
-  const note=document.getElementById('aw_note').value.trim();
-  if(!label){ alert('Please describe what work to do.'); return; }
-  TASKS.push({
-    id:genTaskId(), personId, label, client, dueDate:due||'',
-    status:'not-started', note, type:'direct', isExtra:false,
-    createdBy:currentUser?currentUser.id:'owner1', createdAt:new Date().toISOString()
-  });
   renderTab();
 }
 function updateTaskField(taskId, field, value){
@@ -1969,7 +2003,7 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
   renderDmPersonDropdown, pickDmPerson,
   renderHdDropdown, setHdDisk,
-  renderAwClientDropdown, renderAwLabelDropdown, submitDirectAssign,
+  renderAwClientDropdown, renderAwLabelDropdown, renderAwRowLabelDrop, renderAwRowClientDrop, addAwRow, removeAwRow, submitDirectAssign,
   toggleTaskDone, logExtraWork, updateTaskField, reassignTask, removeTask,
   duplicateTask, openEditTaskModal, saveEditTask, renderEtLabelDropdown,
   WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, TASKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf, migrateTasksFromWeddings});
