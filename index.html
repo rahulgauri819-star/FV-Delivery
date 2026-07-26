@@ -184,7 +184,18 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 .ledger-mini-select{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:100px;}
 .ledger-mini-input{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;background:var(--paper-dim);flex:1;min-width:60px;}
 
-.sched-day{margin-bottom:20px;}
+.cal-grid{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);}
+.cal-row{display:flex;align-items:flex-start;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);}
+.cal-row:last-child{border-bottom:none;}
+.cal-row.cal-sunday{background:var(--red-dim);}
+.cal-row.cal-today{background:var(--gold-dim);}
+.cal-date{width:90px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);padding-top:3px;white-space:nowrap;}
+.cal-tasks{flex:1;display:flex;flex-direction:column;gap:5px;}
+.cal-empty{font-size:11px;color:var(--line);font-style:italic;}
+.cal-task-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--paper-dim);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;font-weight:600;}
+.cal-task-chip.delayed{background:var(--red-dim);border-color:var(--red);}
+.cal-task-chip.done{background:var(--green-dim);border-color:var(--green);opacity:.7;}
+.btn-xs{font-size:10px;padding:2px 7px;border-radius:5px;}
 .sched-day.sched-today .sched-date{color:var(--gold);font-weight:800;}
 .sched-day.holiday .sched-date{color:var(--red);}
 .sched-date{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
@@ -251,7 +262,7 @@ section.block > h2 .btn-add:hover{background:var(--gold-dark);}
 
 <script>
 // ---------- Sample people data ----------
-const APP_VERSION = 'v45';
+const APP_VERSION = 'v47';
 const OWNER = {id:'owner1', name:'Rahul Gauri', title:'Owner', accountRole:'owner', skills:[], loginId:'admin', password:'admin123'};
 const EMPLOYEES = [];
 const FREELANCERS = [];
@@ -334,8 +345,6 @@ const TASKS = []; // independent task records — see spec comment below
 // Shape: {id, personId, label, client, dueDate, status, note, type, weddingId?, ref?, createdBy, createdAt, isExtra}
 let __idCounter=0;
 function genTaskId(){ return 'tk'+Date.now().toString(36)+(__idCounter++).toString(36); }
-// When a wedding track is assigned to someone, create or update the matching TASKS entry
-// so it appears on their schedule without the owner having to do anything extra.
 function syncTaskFromTrack(w, trackLabel, track, ref){
   if(!track.assignee) return;
   const existing = TASKS.find(t=>t.weddingId===w.id && t.ref && JSON.stringify(t.ref)===JSON.stringify(ref));
@@ -346,12 +355,36 @@ function syncTaskFromTrack(w, trackLabel, track, ref){
     existing.dueDate=track.due||'';
     existing.status=track.status||'not-started';
   } else {
+    const createdBy=(typeof currentUser!=='undefined'&&currentUser)?currentUser.id:'owner1';
     TASKS.push({
       id:genTaskId(), personId:track.assignee, label:trackLabel, client:w.client,
       dueDate:track.due||'', status:track.status||'not-started', note:'', type:'wedding',
-      weddingId:w.id, ref, isExtra:false, createdBy:currentUser?currentUser.id:'owner1', createdAt:new Date().toISOString()
+      weddingId:w.id, ref, isExtra:false, createdBy, createdAt:new Date().toISOString()
     });
   }
+}
+// One-time migration: build TASKS from all existing wedding track assignments so staff
+// who were assigned work before v45 still see it on their schedule. Safe to call multiple
+// times — syncTaskFromTrack is idempotent (updates existing entries rather than duplicating).
+function migrateTasksFromWeddings(){
+  WEDDINGS.forEach(w=>{
+    ensureWeddingTracks(w);
+    const pe=w.photoEditing;
+    if(pe.lightroom.assignee) syncTaskFromTrack(w,'Lightroom',pe.lightroom,{kind:'photoEditing',trackKey:'lightroom'});
+    if(pe.photoshop.assignee) syncTaskFromTrack(w,'Photoshop',pe.photoshop,{kind:'photoEditing',trackKey:'photoshop'});
+    VIDEO_EDITING_SINGLE.forEach(t=>{
+      const track=w.videoEditing[t.key];
+      if(track&&track.assignee) syncTaskFromTrack(w,t.label,track,{kind:'videoEditingSingle',trackKey:t.key});
+    });
+    w.events.forEach(ev=>{
+      const track=w.videoEditing.fullVideo[ev.id];
+      if(track&&track.assignee) syncTaskFromTrack(w,ev.name+' Full Video',track,{kind:'fullVideo',eventId:ev.id});
+    });
+    WEDDING_TRACKS.forEach(t=>{
+      const track=w.tracks[t.key];
+      if(track&&track.assignee) syncTaskFromTrack(w,t.label,track,{kind:'wedding',trackKey:t.key});
+    });
+  });
 }
 function genId(){ return 'w'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
 function genEventId(){ return 'ev'+Date.now().toString(36)+(__idCounter++).toString(36)+Math.random().toString(36).slice(2,6); }
@@ -377,6 +410,10 @@ function eligiblePeopleFor(skillKey){
   const staff=EMPLOYEES;
   if(!skillKey) return staff;
   return staff.filter(p=> (p.skills||[]).includes(skillKey));
+}
+function isDelayedTask(t){
+  if(!t.dueDate || t.status==='done') return false;
+  return new Date(t.dueDate) < new Date(new Date().toDateString());
 }
 function isSunday(dateStr){ return dateStr && new Date(dateStr+'T00:00:00').getDay()===0; }
 function shiftDateSkippingSunday(dateStr, days){
@@ -593,9 +630,9 @@ function renderScheduleFor(personId){
       <div class="sched-date">${label}${isToday?' · Today':''}</div>
       <div class="sched-tasks">
         ${tasks.map(t=>{
-          const delayed=isPast && t.status!=='done';
+          const delayed=isDelayedTask(t);
           const cls=t.status==='done'?'done':(delayed?'delayed':'not-started');
-          return `<div class="sched-task${t.isExtra?' sched-extra':''}">
+          return `<div class="sched-task${t.isExtra?' sched-extra':''}${t.status==='done'?' sched-done':''}${delayed?' sched-delayed':''}">
             <div class="sched-task-top">
               <span class="pill ${cls}">${t.status==='done'?'Done':(delayed?'Delayed':'Not Done')}</span>
               <span class="sched-task-label">${esc(t.label)}${t.client?` <span class="tmeta">— ${esc(t.client)}</span>`:''}${t.isExtra?` <span class="tmeta">(extra)</span>`:''}</span>
@@ -638,98 +675,72 @@ function logExtraWork(personId){
   const label=document.getElementById('extra_label').value.trim();
   const note=document.getElementById('extra_note').value.trim();
   if(!label){ alert('Please describe what you did.'); return; }
+  // Use local date (not UTC ISO) so midnight-timezone issues don't show yesterday's date
+  const now=new Date();
+  const localDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   TASKS.push({
-    id:genTaskId(), personId, label, client, dueDate:new Date().toISOString().slice(0,10),
+    id:genTaskId(), personId, label, client, dueDate:localDate,
     status:'done', note, type:'extra', isExtra:true,
-    createdBy:personId, createdAt:new Date().toISOString()
+    createdBy:personId, createdAt:now.toISOString()
   });
   renderTab();
 }
-// Real clickable dropdown for the Client field (was browser-native datalist, which only
-// showed suggestions while typing and had no "browse everyone" affordance) — click to
-// open, filters as you type, typing a brand-new name still works via dmInlineHandle.
-function renderClientDropdown(iso){
-  const box=document.getElementById('clientDropdown_'+iso);
-  const inp=document.getElementById('cli_'+iso);
-  if(!box||!inp) return;
-  const q=inp.value.trim().toLowerCase();
-  const options=WEDDINGS.filter(w=>w.client.toLowerCase().includes(q));
-  box.innerHTML = options.length
-    ? options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();selectClientOption('${iso}','${w.id}')">${esc(w.client)}</div>`).join('')
-    : `<div class="person-dropdown-empty">No match — this will create a new client "${esc(inp.value.trim())}"</div>`;
-  box.style.display='block';
-}
-function selectClientOption(iso, weddingId){
-  const w=WEDDINGS.find(x=>x.id===weddingId);
-  const inp=document.getElementById('cli_'+iso);
-  if(!w||!inp) return;
-  inp.value=w.client;
-  document.getElementById('clientDropdown_'+iso).style.display='none';
-  dmInlineHandle(inp.dataset.person, iso);
-}
-function dmInlineHandle(personId, dateIso){
-  const cliEl=document.getElementById('cli_'+dateIso);
-  const dutyEl=document.getElementById('duty_'+dateIso);
-  const evEl=document.getElementById('ev_'+dateIso);
-  const linkEl=document.getElementById('link_'+dateIso);
-  const notesEl=document.getElementById('notes_'+dateIso);
-  if(!cliEl||!dutyEl) return;
-  const cliName=cliEl.value.trim();
-  const duty=dutyEl.value;
-  if(!cliName){ evEl.style.display='none'; return; }
-  // Typing an existing client's name reuses that wedding; typing a new name creates one
-  // on the spot (dated to the row being filled in) so it shows up under Weddings too.
-  const w=findOrCreateWeddingByName(cliName);
-  const cli=w.id;
-  // show/populate event picker only when Full Event Video is the chosen duty
-  if(duty==='fullVideo'){
-    evEl.innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
-    evEl.style.display='inline-block';
-  } else {
-    evEl.style.display='none';
-  }
-  if(!duty) return;
-  let eventId='';
-  if(duty==='fullVideo'){
-    eventId=evEl.value;
-    if(!eventId) return; // wait until an event is picked too
-  }
-  const link=linkEl?linkEl.value.trim():'';
-  const notes=notesEl?notesEl.value.trim():'';
-  assignTrackForPerson(cli, duty, eventId, personId, '', dateIso, link, '', notes);
-  // Reset inputs without re-rendering the whole tab — this keeps the inline-assign row
-  // visible so another item can be added to the same day straight away (multiple per day).
-  if(cliEl) cliEl.value='';
-  if(dutyEl) dutyEl.value='';
-  if(evEl){ evEl.style.display='none'; evEl.value=''; }
-  if(linkEl) linkEl.value='';
-  if(notesEl) notesEl.value='';
-  // Re-render just the ledger content area to show the new task chip above the input
-  // while keeping the input row itself intact.
-  fvScheduleSave();
-  // Full re-render after a short delay so the UI reflects the save, but only if the
-  // user hasn't started typing in the field again.
-  setTimeout(()=>{ renderTab(); }, 400);
-}
-function updateMyTask(personId, weddingId, refStr, value){
-  const w=WEDDINGS.find(x=>x.id===weddingId);
-  if(!w) return;
-  const ref=JSON.parse(decodeURIComponent(refStr));
-  const track=getTrackByRef(w, ref);
-  if(track) track.status=value;
-  renderTab();
-}
-
 // ---------- Assign Work tab (owner/manager) ----------
 let assignWorkStaffId=null;
 function openAssignWorkStaff(id){ assignWorkStaffId=id; renderTab(); }
 function closeAssignWorkStaff(){ assignWorkStaffId=null; renderTab(); }
+
+// Build label dropdown options from staff's tagged skills + any custom work types
+function skillOptions(person){
+  const skills=(person&&person.skills)||[];
+  const opts=skills.map(s=>SKILL_LABEL[s]).filter(Boolean);
+  // Also add delivery/wedding-wide work types that don't require a specific skill tag
+  const extras=['All Photographs','Album Design','Photo Frames','Video Book','Pendrive','Full Event Video'];
+  extras.forEach(e=>{ if(!opts.includes(e)) opts.push(e); });
+  return opts;
+}
+
 function renderAssignWork(){
   if(assignWorkStaffId){
     const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
-    const myTasks=TASKS.filter(t=>t.personId===assignWorkStaffId && !t.isExtra).sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
-    const today=new Date().toISOString().slice(0,10);
+    const allTasks=TASKS.filter(t=>t.personId===assignWorkStaffId && !t.isExtra)
+      .sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
     const extraTasks=TASKS.filter(t=>t.personId===assignWorkStaffId && t.isExtra);
+    const skillOpts=skillOptions(p);
+
+    // Build 30-day rolling calendar
+    const today=new Date(); today.setHours(0,0,0,0);
+    const days=[];
+    for(let i=0;i<30;i++){
+      const d=new Date(today); d.setDate(today.getDate()+i);
+      days.push(d.toISOString().slice(0,10));
+    }
+
+    const calRows=days.map(iso=>{
+      const dayTasks=allTasks.filter(t=>t.dueDate===iso);
+      const sunday=new Date(iso+'T00:00:00').getDay()===0;
+      const isToday=iso===days[0];
+      const dateLabel=new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
+      return `
+        <div class="cal-row${sunday?' cal-sunday':''}${isToday?' cal-today':''}">
+          <div class="cal-date">${dateLabel}${isToday?' · Today':''}</div>
+          <div class="cal-tasks">
+            ${dayTasks.length
+              ? dayTasks.map(t=>`
+                <div class="cal-task-chip${isDelayedTask(t)?' delayed':''}${t.status==='done'?' done':''}">
+                  <span>${esc(t.label)}${t.client?` — ${esc(t.client)}`:''}</span>
+                  <span style="display:flex;gap:5px;align-items:center;">
+                    <button class="btn btn-ghost btn-xs" onclick="openEditTaskModal('${t.id}')">Edit</button>
+                    <button class="btn btn-ghost btn-xs" onclick="duplicateTask('${t.id}')">Dup</button>
+                    <button class="btn btn-ghost btn-xs" style="color:var(--red);" onclick="removeTask('${t.id}')">✕</button>
+                  </span>
+                </div>`)
+              .join('')
+              : `<span class="cal-empty">Free</span>`}
+          </div>
+        </div>`;
+    }).join('');
+
     return `
       <span class="back-link" onclick="closeAssignWorkStaff()">&larr; back to staff list</span>
       <h2 class="font-display" style="font-size:20px;margin-bottom:20px;">${esc(p.name)} <span style="color:var(--muted);font-weight:500;font-size:14px;">— ${esc(p.title)}</span></h2>
@@ -737,7 +748,15 @@ function renderAssignWork(){
       <div class="card" style="margin-bottom:20px;">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">+ Assign New Task</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <input id="aw_label" placeholder="What to do — e.g. Lightroom editing, Album design..." style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+          <div style="position:relative;">
+            <input id="aw_label" placeholder="What to do..." autocomplete="off"
+              style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
+              oninput="renderAwLabelDropdown()" onfocus="renderAwLabelDropdown()"
+              onblur="setTimeout(()=>{const d=document.getElementById('awLabelDropdown');if(d)d.style.display='none';},150)">
+            <div id="awLabelDropdown" class="person-dropdown">
+              ${skillOpts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label').value='${esc(o)}';document.getElementById('awLabelDropdown').style.display='none';">${esc(o)}</div>`).join('')}
+            </div>
+          </div>
           <div style="position:relative;">
             <input id="aw_client" placeholder="Client name (optional)" autocomplete="off"
               style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
@@ -745,34 +764,15 @@ function renderAssignWork(){
               onblur="setTimeout(()=>{const d=document.getElementById('awClientDropdown');if(d)d.style.display='none';},150)">
             <div id="awClientDropdown" class="person-dropdown"></div>
           </div>
-          <input id="aw_due" type="date" placeholder="Due date" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
+          <input id="aw_due" type="date" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
           <input id="aw_note" placeholder="Note for staff (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);">
           <button class="btn btn-primary" onclick="submitDirectAssign('${assignWorkStaffId}')">Assign Task</button>
         </div>
       </div>
 
-      <section class="block" style="padding:0;">
-        <h2 style="margin-bottom:14px;">Upcoming Tasks (${myTasks.filter(t=>t.status!=='done').length} pending)</h2>
-        ${myTasks.length ? myTasks.map(t=>{
-          const delayed=t.dueDate && t.dueDate<today && t.status!=='done';
-          return `<div class="sched-task${delayed?' sched-delayed':''}${t.status==='done'?' sched-done':''}">
-            <div class="sched-task-top">
-              <span class="pill ${t.status==='done'?'done':(delayed?'delayed':'not-started')}">${t.status==='done'?'Done':(delayed?'Delayed':'Not Done')}</span>
-              <span class="sched-task-label">${esc(t.label)}${t.client?` <span class="tmeta">— ${esc(t.client)}</span>`:''}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
-              <input type="date" value="${t.dueDate||''}" style="padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--paper-dim);"
-                onchange="updateTaskField('${t.id}','dueDate',this.value)">
-              <select style="padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--paper-dim);"
-                onchange="reassignTask('${t.id}',this.value)">
-                <option value="">Reassign to...</option>
-                ${EMPLOYEES.map(emp=>`<option value="${emp.id}" ${emp.id===t.personId?'selected':''}>${esc(emp.name)}</option>`).join('')}
-              </select>
-              <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="removeTask('${t.id}')">Remove</button>
-            </div>
-            ${t.note?`<div class="sched-note">📝 ${esc(t.note)}</div>`:''}
-          </div>`;
-        }).join('') : emptyState('No tasks assigned to this person yet.')}
+      <section class="block" style="padding:0;margin-bottom:24px;">
+        <h2 style="margin-bottom:10px;">Next 30 Days <span style="color:var(--muted);font-weight:400;font-size:13px;">${allTasks.filter(t=>t.status!=='done').length} pending</span></h2>
+        <div class="cal-grid">${calRows}</div>
       </section>
 
       ${extraTasks.length ? `
@@ -812,6 +812,16 @@ function renderAssignWork(){
     </section>
   `;
 }
+function renderAwLabelDropdown(){
+  const box=document.getElementById('awLabelDropdown');
+  const inp=document.getElementById('aw_label');
+  if(!box||!inp) return;
+  const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
+  const q=inp.value.trim().toLowerCase();
+  const opts=skillOptions(p).filter(o=>o.toLowerCase().includes(q));
+  box.innerHTML=opts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_label').value='${esc(o)}';document.getElementById('awLabelDropdown').style.display='none';">${esc(o)}</div>`).join('');
+  box.style.display=opts.length?'block':'none';
+}
 function renderAwClientDropdown(){
   const box=document.getElementById('awClientDropdown');
   const inp=document.getElementById('aw_client');
@@ -821,6 +831,75 @@ function renderAwClientDropdown(){
   if(!options.length){box.style.display='none';return;}
   box.innerHTML=options.map(w=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('aw_client').value='${esc(w.client)}';document.getElementById('awClientDropdown').style.display='none';">${esc(w.client)}</div>`).join('');
   box.style.display='block';
+}
+function duplicateTask(taskId){
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  // Default to next day
+  let nextDate='';
+  if(t.dueDate){
+    const d=new Date(t.dueDate+'T00:00:00'); d.setDate(d.getDate()+1);
+    nextDate=d.toISOString().slice(0,10);
+  }
+  TASKS.push({
+    id:genTaskId(), personId:t.personId, label:t.label, client:t.client,
+    dueDate:nextDate, status:'not-started', note:t.note||'', type:'direct',
+    isExtra:false, createdBy:(currentUser?currentUser.id:'owner1'), createdAt:new Date().toISOString()
+  });
+  renderTab();
+}
+function openEditTaskModal(taskId){
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  const p=EMPLOYEES.find(x=>x.id===t.personId)||OWNER;
+  const skillOpts=skillOptions(p);
+  document.getElementById('modalBody').innerHTML=`
+    <h3>Edit Task</h3>
+    <div class="field"><label>What to do</label>
+      <div style="position:relative;">
+        <input id="et_label" value="${esc(t.label)}" autocomplete="off"
+          style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);"
+          oninput="renderEtLabelDropdown()" onfocus="renderEtLabelDropdown()"
+          onblur="setTimeout(()=>{const d=document.getElementById('etLabelDropdown');if(d)d.style.display='none';},150)">
+        <div id="etLabelDropdown" class="person-dropdown">
+          ${skillOpts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('et_label').value='${esc(o)}';document.getElementById('etLabelDropdown').style.display='none';">${esc(o)}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>Client</label><input id="et_client" value="${esc(t.client||'')}" placeholder="Client name (optional)" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);width:100%;"></div>
+    <div class="field"><label>Due Date</label><input id="et_due" type="date" value="${t.dueDate||''}" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);width:100%;"></div>
+    <div class="field"><label>Note for staff</label><input id="et_note" value="${esc(t.note||'')}" placeholder="Optional note" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper-dim);width:100%;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditTask('${taskId}')">Save</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function renderEtLabelDropdown(){
+  const box=document.getElementById('etLabelDropdown');
+  const inp=document.getElementById('et_label');
+  if(!box||!inp) return;
+  const p=EMPLOYEES.find(x=>x.id===assignWorkStaffId)||OWNER;
+  const q=inp.value.trim().toLowerCase();
+  const opts=skillOptions(p).filter(o=>o.toLowerCase().includes(q));
+  box.innerHTML=opts.map(o=>`<div class="person-dropdown-item" onmousedown="event.preventDefault();document.getElementById('et_label').value='${esc(o)}';document.getElementById('etLabelDropdown').style.display='none';">${esc(o)}</div>`).join('');
+  box.style.display=opts.length?'block':'none';
+}
+function saveEditTask(taskId){
+  const t=TASKS.find(x=>x.id===taskId);
+  if(!t) return;
+  t.label=document.getElementById('et_label').value.trim()||t.label;
+  t.client=document.getElementById('et_client').value.trim();
+  t.dueDate=document.getElementById('et_due').value;
+  t.note=document.getElementById('et_note').value.trim();
+  // sync back to wedding track if linked
+  if(t.weddingId && t.ref){
+    const w=WEDDINGS.find(x=>x.id===t.weddingId);
+    if(w){ const track=getTrackByRef(w,t.ref); if(track){ track.due=t.dueDate; } }
+  }
+  closeModal();
+  renderTab();
 }
 function submitDirectAssign(personId){
   const label=document.getElementById('aw_label').value.trim();
@@ -863,69 +942,7 @@ function removeTask(taskId){
   renderTab();
 }
 
-// ---------- Inline "Assign New Work" form on a staff member's page ----------
-function awDutyOptions(person){
-  const all = [
-    {value:'photoEditing:lightroom', label:'Lightroom — Photo Editing', skill:'lightroom'},
-    {value:'photoEditing:photoshop', label:'Photoshop — Photo Editing', skill:'photoshop'},
-    ...VIDEO_EDITING_SINGLE.map(t=>({value:'videoEditingSingle:'+t.key, label:t.label+' — Video Editing', skill:t.skill})),
-    {value:'fullVideo', label:'Full Event Video (pick event below)', skill:'fullVideo'},
-    ...WEDDING_TRACKS.map(t=>({value:'wedding:'+t.key, label:t.label, skill:t.skill}))
-  ];
-  const skills = (person && person.skills) || [];
-  // duties tied to a specific skill only show if this person has that skill tagged;
-  // duties with no skill requirement (open tasks like Album/Delivery) always show
-  return all.filter(o=> !o.skill || skills.includes(o.skill));
-}
-function renderAssignNewWorkForm(personId){
-  if(!WEDDINGS.length) return `<div class="card" style="margin-bottom:20px;">${emptyState('Create a wedding first under the Weddings tab, then come back here to assign work.')}</div>`;
-  const person = EMPLOYEES.find(x=>x.id===personId);
-  const duties = awDutyOptions(person);
-  return `
-    <div class="card" style="margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Assign New Work</div>
-      <div class="field"><label>Client (Wedding)</label>
-        <select id="f_awWedding" onchange="toggleAwEventField()">
-          <option value="">Select client...</option>
-          ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field"><label>Duty</label>
-        <select id="f_awDuty" onchange="toggleAwEventField()">
-          <option value="">Select duty...</option>
-          ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
-        </select>
-        ${!duties.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">No skills tagged for this person yet — add some in Settings to see duty options here.</div>` : ''}
-      </div>
-      <div class="field" id="f_awEventWrap" style="display:none;">
-        <label>Event</label>
-        <select id="f_awEvent"></select>
-      </div>
-      <div class="row2">
-        <div class="field"><label>Start Date</label><select id="f_awStart">${next30DayOptions('')}</select></div>
-        <div class="field"><label>Due Date</label><select id="f_awDue">${next30DayOptions('')}</select></div>
-      </div>
-      <div class="field"><label>Link (optional)</label><input id="f_awLink" placeholder="paste link"></div>
-      <div id="f_awError" style="color:var(--red);font-size:12.5px;margin-bottom:6px;"></div>
-      <button class="btn btn-primary" onclick="submitAssignWork('${personId}')">Assign to this person</button>
-    </div>
-  `;
-}
-function toggleAwEventField(){
-  const dutyEl=document.getElementById('f_awDuty');
-  const weddingEl=document.getElementById('f_awWedding');
-  if(!dutyEl||!weddingEl) return;
-  const duty=dutyEl.value;
-  const weddingId=weddingEl.value;
-  const wrap=document.getElementById('f_awEventWrap');
-  if(duty==='fullVideo' && weddingId){
-    const w=WEDDINGS.find(x=>x.id===weddingId);
-    document.getElementById('f_awEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
-    wrap.style.display='block';
-  } else {
-    wrap.style.display='none';
-  }
-}
+// ---------- Settings (owner only): staff directory ----------
 function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, due, link, status, notes){
   const w=WEDDINGS.find(x=>x.id===weddingId);
   let t=null; let ref=null; let label='';
@@ -951,82 +968,6 @@ function assignTrackForPerson(weddingId, dutyValue, eventId, personId, start, du
   if(ref) syncTaskFromTrack(w, label, t, ref);
   return true;
 }
-function submitAssignWork(personId){
-  const duty=document.getElementById('f_awDuty').value;
-  const weddingId=document.getElementById('f_awWedding').value;
-  const eventEl=document.getElementById('f_awEvent');
-  const eventId=eventEl?eventEl.value:'';
-  const start=document.getElementById('f_awStart').value;
-  const due=document.getElementById('f_awDue').value;
-  const link=document.getElementById('f_awLink').value.trim();
-  const errEl=document.getElementById('f_awError');
-  if(!duty||!weddingId){ errEl.textContent='Pick a duty and a client.'; return; }
-  if(duty==='fullVideo' && !eventId){ errEl.textContent='Pick which event this Full Video is for.'; return; }
-  assignTrackForPerson(weddingId, duty, eventId, personId, start, due, link);
-  renderTab();
-}
-
-// ---------- Assign work directly from a specific date row in the schedule ----------
-function openAssignForDate(personId, dateIso){
-  const person=EMPLOYEES.find(x=>x.id===personId);
-  const duties=awDutyOptions(person);
-  document.getElementById('modalBody').innerHTML = `
-    <h3>Assign Work — ${fmtDate(dateIso)}</h3>
-    <div class="field"><label>Client (Wedding)</label>
-      <select id="f_dmAwWedding" onchange="toggleDmAwEventField()">
-        <option value="">Select client...</option>
-        ${WEDDINGS.map(w=>`<option value="${w.id}">${esc(w.client)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="field"><label>Duty</label>
-      <select id="f_dmAwDuty" onchange="toggleDmAwEventField()">
-        <option value="">Select duty...</option>
-        ${duties.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}
-      </select>
-      ${!duties.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">No skills tagged for this person yet — add some in Settings to see duty options here.</div>` : ''}
-    </div>
-    <div class="field" id="f_dmAwEventWrap" style="display:none;">
-      <label>Event</label>
-      <select id="f_dmAwEvent"></select>
-    </div>
-    <div class="field"><label>Link (optional)</label><input id="f_dmAwLink" placeholder="paste link"></div>
-    <div id="f_dmAwError" style="color:var(--red);font-size:12.5px;margin-bottom:8px;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAssignForDate('${personId}','${dateIso}')">Assign</button>
-    </div>
-  `;
-  document.getElementById('overlay').classList.add('show');
-}
-function toggleDmAwEventField(){
-  const dutyEl=document.getElementById('f_dmAwDuty');
-  const weddingEl=document.getElementById('f_dmAwWedding');
-  if(!dutyEl||!weddingEl) return;
-  const duty=dutyEl.value;
-  const weddingId=weddingEl.value;
-  const wrap=document.getElementById('f_dmAwEventWrap');
-  if(duty==='fullVideo' && weddingId){
-    const w=WEDDINGS.find(x=>x.id===weddingId);
-    document.getElementById('f_dmAwEvent').innerHTML = w.events.map(ev=>`<option value="${ev.id}">${esc(ev.name)}</option>`).join('') || '<option value="">No events yet</option>';
-    wrap.style.display='block';
-  } else {
-    wrap.style.display='none';
-  }
-}
-function submitAssignForDate(personId, dateIso){
-  const duty=document.getElementById('f_dmAwDuty').value;
-  const weddingId=document.getElementById('f_dmAwWedding').value;
-  const eventEl=document.getElementById('f_dmAwEvent');
-  const eventId=eventEl?eventEl.value:'';
-  const link=document.getElementById('f_dmAwLink').value.trim();
-  const errEl=document.getElementById('f_dmAwError');
-  if(!duty||!weddingId){ errEl.textContent='Pick a duty and a client.'; return; }
-  if(duty==='fullVideo' && !eventId){ errEl.textContent='Pick which event this Full Video is for.'; return; }
-  assignTrackForPerson(weddingId, duty, eventId, personId, '', dateIso, link);
-  closeModal();
-  renderTab();
-}
-
 // ---------- Settings (owner only): staff directory ----------
 // ---------- Hard Disk tab ----------
 // Shows all known disks. Selecting one from the dropdown (or searching by name) reveals
@@ -2012,13 +1953,15 @@ Object.assign(window,{setTab, openWeddingDetail, closeWeddingDetail, openWedding
   openEventModal, saveEvent, deleteEvent, updateTrack, updatePhotoEditing, deleteWedding, closeModal,
   addHardDisk, removeHardDisk, toggleDmStatus, confirmDmStatus, openDmSizeInput, saveDmSize, removeDmPerson, openAddDmPerson, saveAddDmPerson, handleFab, toggleEventCard, toggleDmEventCard,
   renderDiskDropdown, selectDisk, duplicateEvent,
-  logout, loginAs, updateMyTask, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
+  logout, loginAs, openStaffModal, saveStaff, deleteStaff, confirmRemoveDmPerson,
   openAssignWorkStaff, closeAssignWorkStaff, setExpandedStage,
   addTeamPerson, removeTeamPerson, renderPersonDropdown, selectTeamPerson,
   renderDmPersonDropdown, pickDmPerson,
   renderHdDropdown, setHdDisk,
-  renderAwClientDropdown, submitDirectAssign, toggleTaskDone, logExtraWork, updateTaskField, reassignTask, removeTask,
-  WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, TASKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf});
+  renderAwClientDropdown, renderAwLabelDropdown, submitDirectAssign,
+  toggleTaskDone, logExtraWork, updateTaskField, reassignTask, removeTask,
+  duplicateTask, openEditTaskModal, saveEditTask, renderEtLabelDropdown,
+  WEDDINGS, EMPLOYEES, FREELANCERS, KNOWN_DISKS, TASKS, OWNER, render, attemptLogin, saveOwnerAccount, ensureWeddingTracks, allTracksOf, migrateTasksFromWeddings});
 
 render();
 </script>
@@ -2107,6 +2050,8 @@ render();
         }));
         if(window.ensureWeddingTracks) window.WEDDINGS.forEach(w=>window.ensureWeddingTracks(w));
         if(window.allTracksOf) window.WEDDINGS.forEach(w=>window.allTracksOf(w));
+        // Migrate any pre-v45 track assignments into TASKS so staff see them on their schedule
+        if(window.migrateTasksFromWeddings) window.migrateTasksFromWeddings();
         if(meta.ownerJSON && window.OWNER){
           const ownerData = JSON.parse(meta.ownerJSON);
           if(ownerData.loginId) window.OWNER.loginId = ownerData.loginId;
@@ -2134,6 +2079,7 @@ render();
             if(ownerData.password) window.OWNER.password = ownerData.password;
           }
           console.log("Fotovision ERM: migrated from old single-doc format, re-saving...");
+          if(window.migrateTasksFromWeddings) window.migrateTasksFromWeddings();
           if(window.render) window.render();
           // Re-save in new split format immediately so old doc is no longer needed
           window.fvScheduleSave();
